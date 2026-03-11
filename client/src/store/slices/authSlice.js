@@ -18,59 +18,160 @@ export const loginUser = createAsyncThunk(
 // thung to load user data on refresh
 export const loadUser = createAsyncThunk(
   "auth/loadUser",
-  async (_, {rejectValue}) => {
+  async (_, { rejectValue }) => {
     try {
       const response = await API.get("/auth/me");
       return response.data;
     } catch (error) {
-      localStorage.removeItem("token") // clear invalid token
-      return rejectValue(error.response.data.message || "failed loading user")
+      localStorage.removeItem("token"); // clear invalid token
+      return rejectValue(error.response.data.message || "failed loading user");
     }
-  }
-)
+  },
+);
+
+export const registerUser = createAsyncThunk(
+  "auth/register",
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await API.post("/auth/register", userData);
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Registration failed");
+    }
+  },
+);
+
+export const verifyOTP = createAsyncThunk(
+  "auth/verifyOTP",
+  async ({ email, otp }, { rejectWithValue }) => {
+    try {
+      const response = await API.post("/auth/verify-otp", { email, otp });
+      // If verification returns token, store it
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Verification failed");
+    }
+  },
+);
+
+export const resendOTP = createAsyncThunk(
+  "auth/resendOTP",
+  async (email, { rejectWithValue }) => {
+    try {
+      const response = await API.post("/auth/resend-otp", { email });
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response.data.message);
+    }
+  },
+);
 
 const authSlice = createSlice({
-    name: "auth", 
-    initialState: {
-      user: null,
-      token: localStorage.getItem("token") || null,
-      loading: false,
-      isInitialized: false,
-      error: null,
+  name: "auth",
+  initialState: {
+    user: null,
+    token: localStorage.getItem("token") || null,
+    loading: false,
+    isInitialized: false,
+    error: null,
+  },
+  reducers: {
+    signOut: (state) => {
+      localStorage.removeItem("token");
+      state.user = null;
+      state.token = null;
     },
-    reducers: {
-      signOut: (state) => {
-        localStorage.removeItem("token");
-        state.user = null;
-        state.token = null;
-      }
-    },
-    extraReducers: builder => {
-      builder.addCase(loginUser.pending, state => {
+  },
+  extraReducers: (builder) => {
+    builder
+      // Login
+      .addCase(loginUser.pending, (state) => {
         state.loading = true;
-      }),
-      builder.addCase(loginUser.fulfilled, (state, action) => {
+        state.error = null;
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
-      }),
-      builder.addCase(loginUser.rejected, (state, action) => {
+        state.error = null;
+      })
+      .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload
-      }),
-      builder.addCase(loadUser.fulfilled, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // Load User
+      .addCase(loadUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(loadUser.fulfilled, (state, action) => {
         state.user = action.payload.user;
         state.loading = false;
         state.isInitialized = true;
-      }),
-      builder.addCase(loadUser.rejected, state => {
+        state.error = null;
+      })
+      .addCase(loadUser.rejected, (state, action) => {
         state.user = null;
         state.loading = false;
         state.token = null;
         state.isInitialized = true;
+        state.error = action.payload;
       })
-    }
-})
 
-export const {signOut} = authSlice.actions;
+      // Register
+      .addCase(registerUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Verify OTP
+      .addCase(verifyOTP.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyOTP.fulfilled, (state, action) => {
+        state.loading = false;
+        // If OTP verification returns token/user, store them
+        if (action.payload.token) {
+          state.token = action.payload.token;
+          localStorage.setItem("token", action.payload.token);
+        }
+        if (action.payload.user) {
+          state.user = action.payload.user;
+        }
+        state.error = null;
+      })
+      .addCase(verifyOTP.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Resend OTP
+      .addCase(resendOTP.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resendOTP.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resendOTP.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
+});
+
+export const { signOut } = authSlice.actions;
 export default authSlice.reducer;
