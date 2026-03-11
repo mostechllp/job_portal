@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { XIcon, MailIcon, ShieldCheckIcon, ArrowLeftIcon } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
+import { useForm } from "react-hook-form";
 import {
   loginUser,
   registerUser,
@@ -8,38 +9,54 @@ import {
   resendOTP,
 } from "../store/slices/authSlice";
 
-export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
+export function AuthModal({
+  isOpen,
+  onClose,
+  initialMode = "signin",
+  onForgotPassword,
+}) {
   const [isAnimating, setIsAnimating] = useState(false);
-  const [mode, setMode] = useState(initialMode); // "signin" or "signup"
-  const [step, setStep] = useState(1); // 1: form, 2: OTP (for signup only)
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "seeker",
-  });
+  const [mode, setMode] = useState(initialMode);
+  const [step, setStep] = useState(1);
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(0);
 
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
 
+  // React Hook Form
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    watch,
+  } = useForm({
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      role: "seeker",
+    },
+  });
+
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const formData = watch(); // Watch all form values
+
   useEffect(() => {
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAnimating(true);
       document.body.style.overflow = "hidden";
-      // Reset state when modal opens
       setMode(initialMode);
       setStep(1);
-      setFormData({ name: "", email: "", password: "", role: "seeker" });
+      reset(); // Reset form values
       setOtp("");
     } else {
       const timer = setTimeout(() => setIsAnimating(false), 300);
       document.body.style.overflow = "unset";
       return () => clearTimeout(timer);
     }
-  }, [isOpen, initialMode]);
+  }, [isOpen, initialMode, reset]);
 
   useEffect(() => {
     let interval;
@@ -51,22 +68,23 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
 
   if (!isOpen && !isAnimating) return null;
 
-  const handleSignIn = async (e) => {
-    e.preventDefault();
+  const onSignInSubmit = async (data) => {
+    console.log("Login data:", data);
     const result = await dispatch(
       loginUser({
-        email: formData.email,
-        password: formData.password,
+        email: data.email,
+        password: data.password,
       }),
     );
+
     if (loginUser.fulfilled.match(result)) {
       onClose();
     }
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    const result = await dispatch(registerUser(formData));
+  const onRegisterSubmit = async (data) => {
+    console.log("Register data:", data);
+    const result = await dispatch(registerUser(data));
     if (registerUser.fulfilled.match(result)) {
       setStep(2);
       setTimer(60);
@@ -82,12 +100,10 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
       }),
     );
     if (verifyOTP.fulfilled.match(result)) {
-      console.log("Verification successful:", result.payload);
       onClose();
+      reset();
+      setOtp("");
     }
-
-    setFormData({ name: "", email: "", password: "", role: "seeker" });
-    setOtp("");
   };
 
   const handleResendOTP = () => {
@@ -98,13 +114,47 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
   const toggleMode = () => {
     setMode(mode === "signin" ? "signup" : "signin");
     setStep(1);
-    setFormData({ name: "", email: "", password: "", role: "seeker" });
+    reset();
     setOtp("");
   };
 
   const handleGoogleSignIn = () => {
-    // Implement Google sign in logic
     console.log("Google sign in");
+  };
+
+  // Validation rules
+  const validationRules = {
+    name: {
+      required: "Name is required",
+      minLength: {
+        value: 2,
+        message: "Name must be at least 2 characters",
+      },
+      pattern: {
+        value: /^[a-zA-Z\s]*$/,
+        message: "Name can only contain letters and spaces",
+      },
+    },
+    email: {
+      required: "Email is required",
+      pattern: {
+        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+        message: "Invalid email address",
+      },
+    },
+    password: {
+      required: "Password is required",
+      minLength: {
+        value: 6,
+        message: "Password must be at least 6 characters",
+      },
+      pattern: {
+        value:
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/,
+        message:
+          "Password must contain at least one uppercase, one lowercase, one number and one special character",
+      },
+    },
   };
 
   return (
@@ -154,7 +204,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
           </p>
         </div>
 
-        {/* Google Sign In Button - Show for both modes on step 1 */}
+        {/* Google Sign In Button */}
         {step === 1 && (
           <>
             <button
@@ -162,6 +212,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
               className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
+                {/* Google SVG paths */}
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -202,9 +253,9 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
           </div>
         )}
 
-        {/* Dynamic Form Content */}
+        {/* Sign In Form */}
         {mode === "signin" && step === 1 && (
-          <form className="space-y-4" onSubmit={handleSignIn}>
+          <form onSubmit={handleSubmit(onSignInSubmit)} className="space-y-4">
             <div>
               <label
                 htmlFor="email"
@@ -214,16 +265,20 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
               </label>
               <input
                 type="email"
-                required
-                value={formData.email}
                 id="email"
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
+                {...register("email", validationRules.email)}
+                className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none ${
+                  errors.email ? "border-red-500" : "border-slate-200"
+                }`}
                 placeholder="you@example.com"
               />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
+
             <div>
               <label
                 htmlFor="password"
@@ -234,13 +289,17 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
               <input
                 type="password"
                 id="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
+                {...register("password", validationRules.password)}
+                className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none ${
+                  errors.password ? "border-red-500" : "border-slate-200"
+                }`}
                 placeholder="••••••••"
               />
+              {errors.password && (
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between mt-2 mb-6">
@@ -258,12 +317,18 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
                 </label>
               </div>
               <div className="text-sm">
-                <a
-                  href="#"
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onForgotPassword) {
+                      setTimeout(() => onForgotPassword(), 300);
+                    }
+                  }}
+                  className="font-medium text-indigo-600 hover:text-indigo-500 bg-transparent border-none"
                 >
                   Forgot password?
-                </a>
+                </button>
               </div>
             </div>
 
@@ -277,8 +342,9 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
           </form>
         )}
 
+        {/* Sign Up Form */}
         {mode === "signup" && step === 1 && (
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleSubmit(onRegisterSubmit)} className="space-y-4">
             <div>
               <label
                 htmlFor="name"
@@ -289,15 +355,19 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
               <input
                 type="text"
                 id="name"
-                required
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
+                {...register("name", validationRules.name)}
+                className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none ${
+                  errors.name ? "border-red-500" : "border-slate-200"
+                }`}
                 placeholder="John Doe"
               />
+              {errors.name && (
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
+
             <div>
               <label
                 htmlFor="signup-email"
@@ -308,15 +378,19 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
               <input
                 type="email"
                 id="signup-email"
-                required
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
+                {...register("email", validationRules.email)}
+                className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none ${
+                  errors.email ? "border-red-500" : "border-slate-200"
+                }`}
                 placeholder="you@example.com"
               />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
+
             <div>
               <label
                 htmlFor="signup-password"
@@ -327,14 +401,17 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
               <input
                 type="password"
                 id="signup-password"
-                required
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
+                {...register("password", validationRules.password)}
+                className={`w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none ${
+                  errors.password ? "border-red-500" : "border-slate-200"
+                }`}
                 placeholder="••••••••"
               />
+              {errors.password && (
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             <button
@@ -347,6 +424,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signin" }) {
           </form>
         )}
 
+        {/* OTP Verification Form */}
         {mode === "signup" && step === 2 && (
           <form onSubmit={handleVerify} className="space-y-6">
             <div className="text-center">

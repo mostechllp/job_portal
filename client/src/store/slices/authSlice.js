@@ -4,13 +4,14 @@ import API from "../../api/axios";
 // Async Thunk for login
 export const loginUser = createAsyncThunk(
   "auth/login",
-  async (credentials, { rejectValue }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
       const response = await API.post("/auth/login", credentials);
       localStorage.setItem("token", response.data.token);
       return response.data;
     } catch (error) {
-      return rejectValue(error.response.data.message || "Login failed");
+      const message = error.response?.data?.message || "Login failed";
+      return rejectWithValue(message);
     }
   },
 );
@@ -18,13 +19,15 @@ export const loginUser = createAsyncThunk(
 // thung to load user data on refresh
 export const loadUser = createAsyncThunk(
   "auth/loadUser",
-  async (_, { rejectValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
       const response = await API.get("/auth/me");
       return response.data;
     } catch (error) {
-      localStorage.removeItem("token"); // clear invalid token
-      return rejectValue(error.response.data.message || "failed loading user");
+      localStorage.removeItem("token"); 
+      return rejectWithValue(
+        error.response?.data?.message || "failed loading user",
+      );
     }
   },
 );
@@ -36,7 +39,9 @@ export const registerUser = createAsyncThunk(
       const response = await API.post("/auth/register", userData);
       return response.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Registration failed");
+      return rejectWithValue(
+        err.response?.data?.message || "Registration failed",
+      );
     }
   },
 );
@@ -52,7 +57,9 @@ export const verifyOTP = createAsyncThunk(
       }
       return response.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Verification failed");
+      return rejectWithValue(
+        err.response?.data?.message || "Verification failed",
+      );
     }
   },
 );
@@ -65,6 +72,65 @@ export const resendOTP = createAsyncThunk(
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response.data.message);
+    }
+  },
+);
+
+export const forgotPassword = createAsyncThunk(
+  "auth/forgotPassword",
+  async (email, { rejectWithValue }) => {
+    try {
+      const response = await API.post("/auth/forgot-password", { email });
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to send reset OTP",
+      );
+    }
+  },
+);
+
+export const verifyResetOTP = createAsyncThunk(
+  "auth/verifyResetOTP",
+  async ({ email, otp }, { rejectWithValue }) => {
+    try {
+      const response = await API.post("/auth/verify-reset-otp", { email, otp });
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Invalid OTP");
+    }
+  },
+);
+
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async ({ email, otp, newPassword }, { rejectWithValue }) => {
+    try {
+      const response = await API.post("/auth/reset-password", {
+        email,
+        otp,
+        newPassword,
+      });
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to reset password",
+      );
+    }
+  },
+);
+
+export const adminLogin = createAsyncThunk(
+  "auth/adminLogin",
+  async (credentials, { rejectWithValue }) => {
+    try {
+      const response = await API.post("/auth/admin-login", credentials);
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("adminToken", response.data.token); // Optional: separate token
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || "Admin login failed";
+      return rejectWithValue(message);
     }
   },
 );
@@ -169,6 +235,64 @@ const authSlice = createSlice({
       .addCase(resendOTP.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Forgot Password
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Verify Reset OTP
+      .addCase(verifyResetOTP.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyResetOTP.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(verifyResetOTP.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Reset Password
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // admin login
+      .addCase(adminLogin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(adminLogin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isInitialized = true;
+        state.error = null;
+      })
+      .addCase(adminLogin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.isInitialized = true;
       });
   },
 });

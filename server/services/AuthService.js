@@ -1,62 +1,12 @@
 import bcrypt from "bcryptjs";
 import { userRepository } from "../config/container.js";
 import jwt from "jsonwebtoken";
-import sgMail from "@sendgrid/mail";
-
-// Don't initialize SendGrid at module level
-let sendGridInitialized = false;
-
-const initializeSendGrid = () => {
-  if (!sendGridInitialized) {
-    if (!process.env.SENDGRID_API_KEY) {
-      console.error("SENDGRID_API_KEY is not set in environment variables");
-      return false;
-    }
-
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    console.log("SendGrid initialized successfully");
-    sendGridInitialized = true;
-    return true;
-  }
-  return true;
-};
-
-const emailTemplate = (user, otp) => {
-  const msg = {
-    to: user.email,
-    from: process.env.FROM_EMAIL || "fidha@mostech.ae",
-    subject: "Verify your CareerHub Account",
-    html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-              <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #4f46e5; margin: 0;">CareerHub</h1>
-              </div>
-              
-              <h2 style="color: #333; text-align: center;">Verify Your Email Address</h2>
-              
-              <p style="color: #666; font-size: 16px; line-height: 1.5; text-align: center;">
-                Thank you for signing up, <strong>${user.name}</strong>! Please use the following OTP to verify your email address:
-              </p>
-              
-              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px; margin: 30px 0;">
-                <div style="font-size: 48px; font-weight: bold; letter-spacing: 10px; color: black; font-family: monospace;">
-                  ${otp}
-                </div>
-              </div>
-              
-              <p style="color: #666; font-size: 14px; text-align: center;">
-                This OTP will expire in <strong>10 minutes</strong>.
-              </p>
-              
-              <p style="color: #999; font-size: 12px; text-align: center; margin-top: 40px;">
-                If you didn't create an account with CareerHub, please ignore this email.
-              </p>
-            </div>
-          `,
-    text: `Hello ${user.name},\n\nYour CareerHub verification OTP is: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you didn't create an account with CareerHub, please ignore this email.`,
-  };
-  return msg;
-};
+import {
+  passwordResetSuccessTemplate,
+  passwordResetTemplate,
+  verificationTemplate,
+} from "../templates/emailTemplate.js";
+import { sendEmail } from "./EmailService.js";
 
 export class AuthService {
   async register(userData) {
@@ -80,27 +30,14 @@ export class AuthService {
         otpExpires,
       });
 
-      // Initialize SendGrid here - AFTER env vars are loaded
-      const isInitialized = initializeSendGrid();
+      const template = verificationTemplate(user, otp);
 
-      // Try to send email via SendGrid
-      try {
-        if (!isInitialized || !process.env.SENDGRID_API_KEY) {
-          throw new Error("SendGrid not properly configured");
-        }
-
-        const msg = emailTemplate(user, otp)
-
-        const response = await sgMail.send(msg);
-      } catch (emailError) {
-        console.error("SendGrid email failed:", {
-          message: emailError.message,
-          code: emailError.code,
-          response: emailError.response?.body,
-        });
-
-        throw new Error("Failed to send verification email");
-      }
+      await sendEmail({
+        to: user.email,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+      });
 
       return {
         message: "OTP sent to email",
@@ -157,9 +94,13 @@ export class AuthService {
     await user.save();
 
     try {
-      const msg = emailTemplate(user, otp)
-
-      await sgMail.send(msg);
+      const template = verificationTemplate(user, otp);
+      await sendEmail({
+        to: user.email,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+      });
     } catch (emailError) {
       console.error("Resend OTP email failed:", emailError.message);
     }
@@ -173,15 +114,21 @@ export class AuthService {
   async login(email, password) {
     const user = await userRepository.findByEmail(email);
     if (!user) {
-      throw new Error("User not found!");
+      const error = new Error("Invalid email or password");
+      error.statusCode = 401;
+      throw error;
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      throw new Error("Password does not match");
+      const error = new Error("Invalid email or password");
+      error.statusCode = 401;
+      throw error;
     }
 
     if (!user.isVerified) {
-      throw new Error("Please verify your email first");
+      const error = new Error("Please verify your email first");
+      error.statusCode = 403; // Forbidden
+      throw error;
     }
 
     const token = jwt.sign(
@@ -197,6 +144,164 @@ export class AuthService {
         email: user.email,
         role: user.role,
       },
+    };
+  }
+  async forgotPassword(email) {
+    try {
+      const user = await userRepository.findByEmail(email);
+      if (!user) {
+        // Don't reveal if user exists or not for security
+        return {
+          message:
+            "If a user with that email exists, a password reset OTP has been sent.",
+        };
+      }
+
+      // Generate OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+      // Save OTP to user
+      user.resetPasswordOTP = otp;
+      user.resetPasswordExpires = otpExpires;
+      await user.save();
+
+      console.log(`Password reset OTP for ${email}: ${otp}`);
+
+      const template = passwordResetTemplate(user, otp);
+
+      await sendEmail({
+        to: user.email,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+      });
+
+      return {
+        message:
+          "If a user with that email exists, a password reset OTP has been sent.",
+        ...(process.env.NODE_ENV === "development" && { dev_otp: otp }),
+      };
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      throw error;
+    }
+  }
+
+  async verifyResetOTP(email, otp) {
+    try {
+      const user = await userRepository.findByEmail(email);
+      if (!user) {
+        throw new Error("Invalid or expired OTP");
+      }
+
+      // Check if OTP exists and is valid
+      if (
+        !user.resetPasswordOTP ||
+        user.resetPasswordOTP !== otp ||
+        user.resetPasswordExpires < Date.now()
+      ) {
+        throw new Error("Invalid or expired OTP");
+      }
+
+      return {
+        message: "OTP verified successfully",
+        valid: true,
+      };
+    } catch (error) {
+      console.error("Verify reset OTP error:", error);
+      throw error;
+    }
+  }
+
+  async resetPassword(email, otp, newPassword) {
+    try {
+      const user = await userRepository.findByEmail(email);
+      if (!user) {
+        throw new Error("Invalid or expired OTP");
+      }
+
+      // Verify OTP again
+      if (
+        !user.resetPasswordOTP ||
+        user.resetPasswordOTP !== otp ||
+        user.resetPasswordExpires < Date.now()
+      ) {
+        throw new Error("Invalid or expired OTP");
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update password and clear reset fields
+      user.password = hashedPassword;
+      user.resetPasswordOTP = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+
+      // Send confirmation email
+      const template = passwordResetSuccessTemplate(user);
+
+      await sendEmail({
+        to: user.email,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+      });
+
+      return {
+        message: "Password reset successfully",
+        success: true,
+      };
+    } catch (error) {
+      console.error("Reset password error:", error);
+      throw error;
+    }
+  }
+
+  async adminLogin(email, password) {
+    const user = await userRepository.findByEmail(email);
+
+    if (!user) {
+      const error = new Error("Invalid admin credentials");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // Check if user has admin role
+    if (user.role !== "admin") {
+      const error = new Error("Access denied. Admin privileges required.");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      const error = new Error("Invalid admin credentials");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // Generate token with admin flag
+    const token = jwt.sign(
+      {
+        id: user.id,
+        role: user.role,
+        isAdmin: true,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" },
+    );
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      isAdmin: true,
     };
   }
 }

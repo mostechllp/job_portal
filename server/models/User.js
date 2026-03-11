@@ -33,6 +33,12 @@ const UserSchema = new Schema(
     otpExpires: {
       type: Date,
     },
+    resetPasswordOTP: {
+      type: String,
+    },
+    resetPasswordExpires: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

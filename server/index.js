@@ -15,13 +15,6 @@ import cors from "cors";
 import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 
-// Verify env is loaded
-console.log("Server starting with:");
-console.log("- EMAIL_USER:", process.env.FROM_EMAIL ? "✅ Loaded" : "❌ Missing");
-console.log("- SENDGRID KEY:", process.env.SENDGRID_API_KEY ? "✅ Loaded" : "❌ Missing");
-console.log("- JWT_SECRET:", process.env.JWT_SECRET ? "✅ Loaded" : "❌ Missing");
-console.log("- NODE_ENV:", process.env.NODE_ENV);
-
 const app = express();
 
 app.use(cors());
@@ -34,12 +27,16 @@ app.use("/api/auth", authRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
-    const statusCode = err.statusCode || 500;
-    res.status(statusCode).json({
-        success: false,
-        message: err.message,
-        stack: process.env.NODE_ENV === "production" ? null : err.stack
-    });
+  console.error("Error:", err.message);
+  
+  // Use error status code if set, otherwise 500
+  const statusCode = err.statusCode || 500;
+  
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || "Internal server error",
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack })
+  });
 });
 
 const PORT = process.env.PORT || 5000;
