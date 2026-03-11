@@ -10,7 +10,7 @@ export function Navbar({
   onTogglePortalMode
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef(null);
   useEffect(() => {
     function handleClickOutside(event) {
       if (

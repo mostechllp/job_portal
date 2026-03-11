@@ -2,7 +2,6 @@ import { LockIcon } from "lucide-react";
 import { useState } from "react";
 import {
   jobs,
-  applications as mockApplications,
   savedJobs } from './data/mockData';
 import { Navbar } from "./components/Navbar";
 import { FilterSidebar } from "./components/FilterSidebar";
@@ -12,12 +11,18 @@ import { SignInModal } from "./components/SignInModal";
 import { JobDetailModal } from "./components/JobDetailModal";
 import { ApplyModal } from "./components/ApplyModal";
 import { ProfilePanel } from "./components/ProfilePanel";
+import { useDispatch, useSelector } from "react-redux";
+import { signOut } from "./store/slices/authSlice";
 
 export function App() {
+
+  // get auth state form redux
+  const {  user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
   const [showSignInModal, setShowSignInModal] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   // Auth & User State
-  const [isSignedIn, setIsSignedIn] = useState(false);
   const [appliedJobs, setAppliedJobs] = useState([]);
   // Modal States
   const [selectedJob, setSelectedJob] = useState(null);
@@ -25,12 +30,11 @@ export function App() {
   const [applyModalJob, setApplyModalJob] = useState(null);
   // Portal Mode
   const [portalMode, setPortalMode] = useState("seeker");
-  const handleSignIn = () => {
-    setIsSignedIn(true);
-    setAppliedJobs(mockApplications); // Populate with mock data on sign in
-  };
+
+  const isSignedIn = !!user;
+  
   const handleSignOut = () => {
-    setIsSignedIn(false);
+    dispatch(signOut())
     setAppliedJobs([]);
   };
   const handleQuickApplyClick = (job) => {
@@ -92,8 +96,8 @@ export function App() {
         onTogglePortalMode={handleTogglePortalMode}
       />
 
-      {portalMode === "admin" ? (
-        <>Hi Admin!</>
+      {portalMode === "admin" && user?.role === "admin" ? (
+        <div className="p-20 text-center text-2xl font-bold">Welcome, Recruitment Admin</div>
       ) : (
         <>
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -154,7 +158,6 @@ export function App() {
           <SignInModal
             isOpen={showSignInModal}
             onClose={() => setShowSignInModal(false)}
-            onSignIn={handleSignIn}
           />
 
           <JobDetailModal

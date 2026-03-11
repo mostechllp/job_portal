@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { userRepository } from "../config/container.js";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
 export class AuthService {
   async register(userData) {
@@ -17,7 +17,7 @@ export class AuthService {
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      throw new Error("Invalid credentials");
+      return res.status(404).json({message: "Password not match"})
     }
     const token = jwt.sign(
       { id: user.id, role: user.role },
