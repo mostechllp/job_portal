@@ -1,4 +1,4 @@
-import { authService } from "../config/container.js";
+import { authService, userRepository } from "../config/container.js";
 
 export class AuthController {
   async register(req, res, next) {
@@ -18,6 +18,17 @@ export class AuthController {
       res.status(200).json(result);
     } catch (error) {
       next(error);
+    }
+  }
+  async getMe(req, res, next) {
+    try {
+      // req.user is already populated by the 'protect' middleware
+      if (!req.user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.status(200).json({ user: req.user });
+    } catch (err) {
+      next(err);
     }
   }
 }

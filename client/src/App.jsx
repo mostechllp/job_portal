@@ -1,5 +1,5 @@
 import { LockIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   jobs,
   savedJobs } from './data/mockData';
@@ -12,12 +12,12 @@ import { JobDetailModal } from "./components/JobDetailModal";
 import { ApplyModal } from "./components/ApplyModal";
 import { ProfilePanel } from "./components/ProfilePanel";
 import { useDispatch, useSelector } from "react-redux";
-import { signOut } from "./store/slices/authSlice";
+import { loadUser, signOut } from "./store/slices/authSlice";
 
 export function App() {
 
   // get auth state form redux
-  const {  user } = useSelector((state) => state.auth);
+  const {  user, token, loading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
   const [showSignInModal, setShowSignInModal] = useState(false);
@@ -32,6 +32,21 @@ export function App() {
   const [portalMode, setPortalMode] = useState("seeker");
 
   const isSignedIn = !!user;
+
+
+  useEffect(() => {
+    if (token) {
+      dispatch(loadUser());
+    } else {
+      // If no token, we are done initializing
+      // Note: You may need a custom action to set isInitialized to true here
+    }
+  }, [dispatch, token]);
+
+  // Prevent the app from showing "Logged Out" UI while checking the token
+  if (loading && token) {
+    return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  }
   
   const handleSignOut = () => {
     dispatch(signOut())
