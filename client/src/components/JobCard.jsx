@@ -1,6 +1,6 @@
 // components/JobCard.jsx
 import React from 'react';
-import { MapPinIcon, ClockIcon, ZapIcon, CheckIcon, BookmarkIcon } from 'lucide-react';
+import { MapPinIcon, ClockIcon, ZapIcon, CheckIcon, BookmarkIcon, BuildingIcon } from 'lucide-react';
 
 export function JobCard({
   job,
@@ -8,6 +8,59 @@ export function JobCard({
   onQuickApply,
   isApplied
 }) {
+  // Generate initials from company name
+  const getInitials = (companyName) => {
+    if (!companyName) return 'CO';
+    return companyName
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Generate a consistent color based on company name
+  const getCompanyColor = (companyName) => {
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500',
+      'bg-purple-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-orange-500',
+      'bg-teal-500',
+      'bg-red-500',
+    ];
+    
+    if (!companyName) return colors[0];
+    
+    // Simple hash function to get a consistent index
+    const hash = companyName.split('').reduce((acc, char) => {
+      return acc + char.charCodeAt(0);
+    }, 0);
+    
+    return colors[hash % colors.length];
+  };
+
+  const initials = getInitials(job.company);
+  const logoColor = getCompanyColor(job.company);
+  
+  // Format posted date nicely
+  const formatPostedDate = (dateString) => {
+    if (!dateString) return 'Recently';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   return (
     <div
       onClick={() => onJobClick(job)}
@@ -17,11 +70,11 @@ export function JobCard({
       <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
         {/* Left section with logo and main info */}
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          {/* Company Logo/Initials */}
+          {/* Company Logo/Initials - Now dynamically generated */}
           <div
-            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0 ${job.logoColor}`}
+            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg flex-shrink-0 ${logoColor}`}
           >
-            {job.initials}
+            {initials}
           </div>
 
           {/* Job Title & Company - Always visible */}
@@ -64,11 +117,11 @@ export function JobCard({
           {/* Job Type & Posted Date */}
           <div className="flex items-center gap-2 sm:justify-end w-full">
             <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 whitespace-nowrap">
-              {job.type}
+              {job.type || 'Full-time'}
             </span>
             <div className="flex items-center gap-1 text-slate-400 text-xs whitespace-nowrap">
               <ClockIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span>{job.postedDate}</span>
+              <span>{formatPostedDate(job.postedDate)}</span>
             </div>
           </div>
 
@@ -97,7 +150,7 @@ export function JobCard({
         </div>
       </div>
 
-      {/* Tags/Categories - Optional section if your job has tags */}
+      {/* Tags/Categories */}
       {job.tags && job.tags.length > 0 && (
         <div className="flex gap-1.5 mt-3 pt-2 border-t border-slate-100 overflow-x-auto pb-1 hide-scrollbar">
           {job.tags.map((tag, index) => (

@@ -92,7 +92,7 @@ export class JobService {
       console.log("Normalized job tags:", jobTags);
 
       // Find all seeker profiles
-      const profiles = await profileRepository.find()
+      const profiles = await profileRepository.find();
 
       console.log(`Found ${profiles.length} total profiles`);
 
@@ -311,5 +311,149 @@ export class JobService {
 
     console.log(`Job alerts sent: ${successful}/${matches.length} successful`);
     return { total: matches.length, successful };
+  }
+
+  // services/JobService.js
+  async getPublicJobs(filters = {}) {
+    try {
+      console.log("JobService.getPublicJobs received filters:", filters); // Debug log
+
+      const { page = 1, limit = 10, category, location, type } = filters;
+      const skip = (page - 1) * limit;
+
+      // Build query - only include active jobs
+      const query = { isActive: true };
+
+      if (category) {
+        query.category = category;
+      }
+
+      if (location) {
+        query.location = { $regex: location, $options: "i" };
+      }
+
+      if (type) {
+        query.workType = type;
+      }
+
+      console.log("Built MongoDB query:", query); // Debug log
+
+      // Get total count for pagination
+      const total = await jobRepository.countDocuments(query);
+      console.log("Total matching jobs:", total); // Debug log
+
+      // Get jobs with pagination
+      const jobs = await jobRepository.findPublic(query, {
+        skip,
+        limit,
+        sort: { createdAt: -1 },
+      });
+
+      console.log(`Found ${jobs.length} jobs`); // Debug log
+
+      return {
+        data: jobs,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      console.error("Error in getPublicJobs service:", error);
+      throw new Error("Error fetching public jobs: " + error.message);
+    }
+  }
+
+  async getPublicJobById(id) {
+    try {
+      const job = await jobRepository.findById(id);
+
+      if (!job) {
+        throw new Error("Job not found");
+      }
+
+      if (!job.isActive) {
+        throw new Error("Job is no longer active");
+      }
+
+      // Don't return sensitive information
+      return {
+        _id: job._id,
+        title: job.title,
+        company: job.company,
+        category: job.category,
+        salary: job.salary,
+        location: job.location,
+        description: job.description,
+        tags: job.tags,
+        isActive: job.isActive,
+        createdAt: job.createdAt,
+        applicantCount: job.applicantCount,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async searchJobs(searchParams) {
+    try {
+      const { query, location, category } = searchParams;
+
+      const searchQuery = { isActive: true };
+
+      if (query) {
+        searchQuery.$or = [
+          { title: { $regex: query, $options: "i" } },
+          { description: { $regex: query, $options: "i" } },
+          { tags: { $in: [new RegExp(query, "i")] } },
+        ];
+      }
+
+      if (location) {
+        searchQuery.location = { $regex: location, $options: "i" };
+      }
+
+      if (category) {
+        searchQuery.category = category;
+      }
+
+      const jobs = await jobRepository.findPublic(searchQuery, {
+        sort: { createdAt: -1 },
+        limit: 50,
+      });
+
+      return jobs;
+    } catch (error) {
+      throw new Error("Error searching jobs: " + error.message);
+    }
+  }
+
+  async getSimilarJobs(jobId, limit = 5) {
+    try {
+      const job = await jobRepository.findById(jobId);
+
+      if (!job) {
+        throw new Error("Job not found");
+      }
+
+      // Find similar jobs based on tags and category
+      const similarJobs = await jobRepository.findPublic(
+        {
+          _id: { $ne: jobId },
+          isActive: true,
+          $or: [{ category: job.category }, { tags: { $in: job.tags } }],
+        },
+        {
+          limit,
+          sort: { createdAt: -1 },
+        },
+      );
+
+      return similarJobs;
+    } catch (error) {
+      throw new Error("Error fetching similar jobs: " + error.message);
+    }
   }
 }

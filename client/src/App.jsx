@@ -1,6 +1,6 @@
 import { LockIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { jobs, savedJobs } from "./data/mockData";
+import { savedJobs } from "./data/mockData"; // Remove jobs import
 import { Navbar } from "./components/Navbar";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { JobFeed } from "./components/JobFeed";
@@ -15,6 +15,7 @@ import { ForgotPasswordModal } from "./components/ForgotPasswordModal";
 
 export function App() {
   const { user, token, loading } = useSelector((state) => state.auth);
+  const { jobs } = useSelector((state) => state.seekerJobs); // Get jobs from Redux
   const dispatch = useDispatch();
 
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -97,6 +98,7 @@ export function App() {
   const submitApplication = (job) => {
     const newApplication = {
       id: Math.random().toString(36).substr(2, 9),
+      jobId: job._id, // Use _id from MongoDB
       jobTitle: job.title,
       company: job.company,
       dateApplied: new Date().toLocaleDateString("en-US", {
@@ -111,6 +113,7 @@ export function App() {
   };
 
   const handleViewApplicationDetails = (app) => {
+    // Find job in Redux jobs instead of mock data
     const fullJob = jobs.find(
       (j) => j.title === app.jobTitle && j.company === app.company,
     );
@@ -120,6 +123,7 @@ export function App() {
   };
 
   const handleSavedJobClick = (savedJob) => {
+    // Find job in Redux jobs instead of mock data
     const fullJob = jobs.find(
       (j) => j.title === savedJob.title && j.company === savedJob.company,
     );
@@ -156,7 +160,7 @@ export function App() {
           {/* Main Feed */}
           <div className="md:col-span-8 lg:col-span-9 space-y-8">
             <JobFeed
-              jobs={jobs}
+              jobs={jobs} // Pass Redux jobs
               appliedJobs={appliedJobs}
               onJobClick={setSelectedJob}
               onQuickApply={handleQuickApplyClick}

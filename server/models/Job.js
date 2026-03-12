@@ -30,10 +30,12 @@ const JobSchema = new Schema(
       type: String,
       required: true,
     },
-    tags: [{
-      type: String,
-      trim: true,
-    }],
+    tags: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,
@@ -47,10 +49,15 @@ const JobSchema = new Schema(
       ref: "User",
       required: true,
     },
+    workType: {
+      type: String,
+      enum: ["remote", "hybrid", "on-site", "any"],
+      default: "any",
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const Job = mongoose.model("Job", JobSchema);

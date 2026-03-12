@@ -39,7 +39,7 @@ export class JobRepository {
       return await Job.findByIdAndUpdate(
         id,
         { $set: updateData },
-        { returnDocument: "after", runValidators: true }
+        { returnDocument: "after", runValidators: true },
       );
     } catch (error) {
       throw new Error("Error updating job: " + error.message);
@@ -59,7 +59,7 @@ export class JobRepository {
       return await Job.findByIdAndUpdate(
         id,
         { $set: { isActive } },
-        { returnDocument: "after" }
+        { returnDocument: "after" },
       );
     } catch (error) {
       throw new Error("Error toggling job status: " + error.message);
@@ -71,10 +71,46 @@ export class JobRepository {
       return await Job.findByIdAndUpdate(
         id,
         { $inc: { applicantCount: 1 } },
-        { returnDocument: "after" }
+        { returnDocument: "after" },
       );
     } catch (error) {
       throw new Error("Error incrementing applicant count: " + error.message);
+    }
+  }
+
+  // repositories/JobRepository.js
+  async findPublic(query, options = {}) {
+    try {
+      const { skip = 0, limit = 10, sort = { createdAt: -1 } } = options;
+
+      console.log("Repository findPublic query:", query); // Debug log
+      console.log("Repository options:", { skip, limit, sort }); // Debug log
+
+      const jobs = await Job.find(query)
+        .select("-createdBy -__v") // Exclude sensitive fields
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+      console.log(`Repository found ${jobs.length} jobs`); // Debug log
+
+      return jobs;
+    } catch (error) {
+      console.error("Error in findPublic repository:", error);
+      throw new Error("Error finding public jobs: " + error.message);
+    }
+  }
+
+  async countDocuments(query) {
+    try {
+      console.log("Repository countDocuments query:", query); // Debug log
+      const count = await Job.countDocuments(query);
+      console.log("Repository count:", count); // Debug log
+      return count;
+    } catch (error) {
+      console.error("Error in countDocuments repository:", error);
+      throw new Error("Error counting jobs: " + error.message);
     }
   }
 }
