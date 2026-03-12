@@ -150,6 +150,11 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
     },
+    updateUserProfileImage: (state, action) => {
+    if (state.user) {
+      state.user.profileImg = action.payload;
+    }
+  },
   },
   extraReducers: (builder) => {
     builder
@@ -297,5 +302,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { signOut } = authSlice.actions;
+export const { signOut, updateUserProfileImage } = authSlice.actions;
 export default authSlice.reducer;

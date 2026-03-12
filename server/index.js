@@ -1,4 +1,3 @@
-// index.js - THIS MUST BE THE VERY FIRST THING
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,11 +13,17 @@ import express from "express";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js"
 
 const app = express();
 
 app.use(cors({
-  origin: process.env.NODE_ENV === "production" ? "https://jobportal-brown-delta.vercel.app" : "http://localhost:5173"
+  origin: process.env.NODE_ENV === "production" 
+    ? "https://jobportal-brown-delta.vercel.app" 
+    : "http://localhost:5173",
+  credentials: true, 
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -26,6 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 connectDB();
 
 app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

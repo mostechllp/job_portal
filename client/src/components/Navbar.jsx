@@ -211,13 +211,22 @@ export function Navbar({
               </div>
             ) : (
               <div className="relative" ref={dropdownRef}>
-                <button
+                {user?.profileImg ? (
+                  <img
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 font-semibold text-xs sm:text-sm border-2 border-white shadow-sm"
-                  aria-label="User menu"
-                >
-                  {user?.name ? user.name.slice(0, 1).toUpperCase() : "U"}
-                </button>
+                    src={user.profileImg}
+                    className="w-9 h-9 rounded-full object-cover"
+                    aria-label="User menu"
+                  />
+                ) : (
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 font-semibold text-xs sm:text-sm border-2 border-white shadow-sm"
+                    aria-label="User menu"
+                  >
+                    {user?.name ? user.name.slice(0, 1).toUpperCase() : "U"}
+                  </button>
+                )}
 
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50">
