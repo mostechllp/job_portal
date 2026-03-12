@@ -174,34 +174,6 @@ export function AdminLoginPage() {
               )}
             </div>
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  type="checkbox"
-                  {...register("rememberMe")}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer"
-                />
-                <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-slate-600 cursor-pointer"
-                >
-                  Remember me
-                </label>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  // Handle forgot password
-                  console.log("Forgot password clicked");
-                }}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-500 bg-transparent border-none"
-              >
-                Forgot password?
-              </button>
-            </div>
-
             {/* Submit Button */}
             <button
               type="submit"

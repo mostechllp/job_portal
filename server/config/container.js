@@ -1,8 +1,11 @@
 import { AuthController } from "../controllers/authController.js";
+import { JobController } from "../controllers/jobController.js";
 import { ProfileController } from "../controllers/profileController.js";
+import { JobRepository } from "../repositories/JobRepository.js";
 import { ProfileRepository } from "../repositories/ProfileRepository.js";
 import { UserRepository } from "../repositories/UserRepository.js";
 import { AuthService } from "../services/AuthService.js";
+import { JobService } from "../services/JobService.js";
 import { ProfileService } from "../services/ProfileService.js";
 
 const userRepository = new UserRepository();
@@ -13,11 +16,18 @@ const profileRepository = new ProfileRepository();
 const profileService = new ProfileService();
 const profileController = new ProfileController();
 
+const jobRepository = new JobRepository();
+const jobService = new JobService();
+const jobController = new JobController();
+
 export {
     userRepository,
     authService,
     authController,
     profileRepository,
     profileService,
-    profileController
+    profileController,
+    jobRepository,
+    jobService,
+    jobController
 }

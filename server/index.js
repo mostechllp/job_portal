@@ -14,6 +14,7 @@ import cors from "cors";
 import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js"
+import jobRoutes from "./routes/jobRoutes.js"
 
 const app = express();
 
@@ -32,6 +33,7 @@ connectDB();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/admin/jobs", jobRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

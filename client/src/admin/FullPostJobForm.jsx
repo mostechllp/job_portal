@@ -1,6 +1,8 @@
-import React, { useState } from "react";
-import { PlusIcon } from "lucide-react";
-export function FullPostJobForm({ onPostJob }) {
+// components/FullPostJobForm.jsx
+import React, { useState, useEffect } from "react";
+import { PlusIcon, Loader2 } from "lucide-react";
+
+export function FullPostJobForm({ onPostJob, initialData = null, isEditing = false }) {
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("CareerHub Inc.");
   const [category, setCategory] = useState("");
@@ -8,35 +10,71 @@ export function FullPostJobForm({ onPostJob }) {
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (initialData) {
+      setTitle(initialData.title || "");
+      setCompany(initialData.company || "CareerHub Inc.");
+      setCategory(initialData.category || "");
+      setSalary(initialData.salary || "");
+      setLocation(initialData.location || "");
+      setDescription(initialData.description || "");
+      setTagsInput(initialData.tags?.join(", ") || "");
+    }
+  }, [initialData]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (title && category && salary && location && description) {
-      const tags = tagsInput
-        .split(",")
-        .map((t) => t.trim())
-        .filter((t) => t);
-      onPostJob({
-        title,
-        company,
-        category,
-        salary,
-        location,
-        description,
-        tags,
-      });
-      // Reset form
-      setTitle("");
-      setCategory("");
-      setSalary("");
-      setLocation("");
-      setDescription("");
-      setTagsInput("");
+      setIsSubmitting(true);
+      try {
+        const tags = tagsInput
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t);
+        
+        await onPostJob({
+          title,
+          company,
+          category,
+          salary,
+          location,
+          description,
+          tags,
+        });
+
+        // Reset form only if not editing
+        if (!isEditing) {
+          setTitle("");
+          setCategory("");
+          setSalary("");
+          setLocation("");
+          setDescription("");
+          setTagsInput("");
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
+
+  const categories = [
+    "Engineering",
+    "Design",
+    "Marketing",
+    "Sales",
+    "Data",
+    "Product",
+    "Customer Support",
+    "Other"
+  ];
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
       <h3 className="text-xl font-semibold text-slate-900 mb-6">
-        Create a New Job Posting
+        {isEditing ? "Edit Job Posting" : "Create a New Job Posting"}
       </h3>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -46,7 +84,7 @@ export function FullPostJobForm({ onPostJob }) {
               htmlFor="full-title"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Job Title
+              Job Title <span className="text-red-500">*</span>
             </label>
             <input
               id="full-title"
@@ -56,6 +94,7 @@ export function FullPostJobForm({ onPostJob }) {
               placeholder="e.g. Senior React Developer"
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
               required
+              disabled={isSubmitting}
             />
           </div>
           <div>
@@ -63,7 +102,7 @@ export function FullPostJobForm({ onPostJob }) {
               htmlFor="full-company"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Company
+              Company <span className="text-red-500">*</span>
             </label>
             <input
               id="full-company"
@@ -72,6 +111,7 @@ export function FullPostJobForm({ onPostJob }) {
               onChange={(e) => setCompany(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
               required
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -82,7 +122,7 @@ export function FullPostJobForm({ onPostJob }) {
               htmlFor="full-category"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Category
+              Category <span className="text-red-500">*</span>
             </label>
             <select
               id="full-category"
@@ -90,15 +130,16 @@ export function FullPostJobForm({ onPostJob }) {
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none appearance-none"
               required
+              disabled={isSubmitting}
             >
               <option value="" disabled>
                 Select category...
               </option>
-              <option value="Engineering">Engineering</option>
-              <option value="Design">Design</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Sales">Sales</option>
-              <option value="Data">Data</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -106,7 +147,7 @@ export function FullPostJobForm({ onPostJob }) {
               htmlFor="full-salary"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Salary Range
+              Salary Range <span className="text-red-500">*</span>
             </label>
             <input
               id="full-salary"
@@ -116,6 +157,7 @@ export function FullPostJobForm({ onPostJob }) {
               placeholder="e.g. $120k - $150k"
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
               required
+              disabled={isSubmitting}
             />
           </div>
           <div>
@@ -123,7 +165,7 @@ export function FullPostJobForm({ onPostJob }) {
               htmlFor="full-location"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Location
+              Location <span className="text-red-500">*</span>
             </label>
             <input
               id="full-location"
@@ -133,6 +175,7 @@ export function FullPostJobForm({ onPostJob }) {
               placeholder="e.g. Remote, or New York, NY"
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
               required
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -142,11 +185,10 @@ export function FullPostJobForm({ onPostJob }) {
             htmlFor="full-description"
             className="block text-sm font-medium text-slate-700 mb-1"
           >
-            Job Description
+            Job Description <span className="text-red-500">*</span>
           </label>
           <p className="text-xs text-slate-500 mb-2">
-            Include expectations, responsibilities, and eligibility
-            requirements.
+            Include expectations, responsibilities, and eligibility requirements.
           </p>
           <textarea
             id="full-description"
@@ -156,6 +198,7 @@ export function FullPostJobForm({ onPostJob }) {
             placeholder="Describe the role..."
             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none resize-y"
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -173,16 +216,37 @@ export function FullPostJobForm({ onPostJob }) {
             onChange={(e) => setTagsInput(e.target.value)}
             placeholder="e.g. React, TypeScript, Remote"
             className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none"
+            disabled={isSubmitting}
           />
         </div>
 
-        <div className="pt-4 border-t border-slate-100 flex justify-end">
+        <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="px-8 py-3 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+          )}
           <button
             type="submit"
-            className="flex items-center justify-center gap-2 px-8 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            disabled={isSubmitting}
+            className="flex items-center justify-center gap-2 px-8 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <PlusIcon className="w-5 h-5" />
-            Publish Job Posting
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                {isEditing ? "Updating..." : "Publishing..."}
+              </>
+            ) : (
+              <>
+                <PlusIcon className="w-5 h-5" />
+                {isEditing ? "Update Job Posting" : "Publish Job Posting"}
+              </>
+            )}
           </button>
         </div>
       </form>

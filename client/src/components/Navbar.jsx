@@ -1,4 +1,3 @@
-// components/Navbar.jsx
 import React, { useEffect, useState, useRef } from "react";
 import {
   SearchIcon,
@@ -12,6 +11,9 @@ import {
   PlusCircleIcon,
   UsersIcon,
   SettingsIcon,
+  Briefcase,
+  ListChecksIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -28,9 +30,11 @@ export function Navbar({
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [jobsMenuOpen, setJobsMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const dropdownRef = useRef(null);
   const adminMenuRef = useRef(null);
+  const jobsMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -44,6 +48,12 @@ export function Navbar({
         !adminMenuRef.current.contains(event.target)
       ) {
         setAdminMenuOpen(false);
+      }
+      if (
+        jobsMenuRef.current &&
+        !jobsMenuRef.current.contains(event.target)
+      ) {
+        setJobsMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -68,6 +78,28 @@ export function Navbar({
       icon: PlusCircleIcon,
     },
     {
+      id: "manage-jobs",
+      label: "Manage Jobs",
+      icon: Briefcase,
+      subItems: [
+        {
+          id: "all-jobs",
+          label: "All Jobs",
+          icon: ListChecksIcon,
+        },
+        {
+          id: "active-jobs",
+          label: "Active Jobs",
+          icon: Briefcase,
+        },
+        {
+          id: "closed-jobs",
+          label: "Closed Jobs",
+          icon: XIcon,
+        },
+      ],
+    },
+    {
       id: "candidates",
       label: "Candidates",
       icon: UsersIcon,
@@ -78,6 +110,12 @@ export function Navbar({
       icon: SettingsIcon,
     },
   ];
+
+  const handleAdminNavigation = (itemId) => {
+    onAdminTabChange(itemId);
+    setAdminMenuOpen(false);
+    setJobsMenuOpen(false);
+  };
 
   return (
     <nav className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
@@ -129,9 +167,116 @@ export function Navbar({
               <SearchIcon className="w-5 h-5" />
             </button>
 
-            {/* Admin Menu Button - Only visible in admin route */}
+            {/* Admin Navigation - Desktop */}
             {isAdminRoute && (
-              <div className="relative" ref={adminMenuRef}>
+              <div className="hidden md:flex items-center gap-1">
+                {/* Overview */}
+                <button
+                  onClick={() => handleAdminNavigation("overview")}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    adminActiveTab === "overview"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  Overview
+                </button>
+
+                {/* Post a Job */}
+                <button
+                  onClick={() => handleAdminNavigation("post-job")}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    adminActiveTab === "post-job"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  Post a Job
+                </button>
+
+                {/* Manage Jobs Dropdown */}
+                <div className="relative" ref={jobsMenuRef}>
+                  <button
+                    onClick={() => setJobsMenuOpen(!jobsMenuOpen)}
+                    className={`flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      ["all-jobs", "active-jobs", "closed-jobs"].includes(adminActiveTab)
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Briefcase className="w-4 h-4" />
+                    Manage Jobs
+                    <ChevronDownIcon className={`w-4 h-4 transition-transform ${jobsMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {jobsMenuOpen && (
+                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+                      <button
+                        onClick={() => handleAdminNavigation("all-jobs")}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                          adminActiveTab === "all-jobs"
+                            ? "bg-indigo-50 text-indigo-700 font-medium"
+                            : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <ListChecksIcon className="w-4 h-4" />
+                        All Jobs
+                      </button>
+                      <button
+                        onClick={() => handleAdminNavigation("active-jobs")}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                          adminActiveTab === "active-jobs"
+                            ? "bg-indigo-50 text-indigo-700 font-medium"
+                            : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Briefcase className="w-4 h-4" />
+                        Active Jobs
+                      </button>
+                      <button
+                        onClick={() => handleAdminNavigation("closed-jobs")}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                          adminActiveTab === "closed-jobs"
+                            ? "bg-indigo-50 text-indigo-700 font-medium"
+                            : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <XIcon className="w-4 h-4" />
+                        Closed Jobs
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Candidates */}
+                <button
+                  onClick={() => handleAdminNavigation("candidates")}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    adminActiveTab === "candidates"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  Candidates
+                </button>
+
+                {/* Settings */}
+                <button
+                  onClick={() => handleAdminNavigation("settings")}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    adminActiveTab === "settings"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  Settings
+                </button>
+              </div>
+            )}
+
+            {/* Admin Menu Button - Mobile only */}
+            {isAdminRoute && (
+              <div className="relative md:hidden" ref={adminMenuRef}>
                 <button
                   onClick={() => setAdminMenuOpen(!adminMenuOpen)}
                   className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors"
@@ -143,9 +288,9 @@ export function Navbar({
                   <MenuIcon className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                 </button>
 
-                {/* Admin Dropdown Menu */}
+                {/* Admin Dropdown Menu - Mobile */}
                 {adminMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
                     <div className="px-4 py-2 border-b border-slate-100">
                       <p className="text-sm font-medium text-slate-900">
                         Admin Menu
@@ -158,11 +303,44 @@ export function Navbar({
                     {adminNavItems.map((item) => {
                       const Icon = item.icon;
                       const isActive = adminActiveTab === item.id;
+                      
+                      if (item.subItems) {
+                        return (
+                          <div key={item.id} className="border-b border-slate-100 last:border-0">
+                            <div className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                              {item.label}
+                            </div>
+                            {item.subItems.map((subItem) => {
+                              const SubIcon = subItem.icon;
+                              return (
+                                <button
+                                  key={subItem.id}
+                                  onClick={() => {
+                                    handleAdminNavigation(subItem.id);
+                                    setAdminMenuOpen(false);
+                                  }}
+                                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                                    adminActiveTab === subItem.id
+                                      ? "bg-indigo-50 text-indigo-700 font-medium"
+                                      : "text-slate-700 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  <SubIcon
+                                    className={`w-4 h-4 ${adminActiveTab === subItem.id ? "text-indigo-600" : "text-slate-500"}`}
+                                  />
+                                  {subItem.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      }
+
                       return (
                         <button
                           key={item.id}
                           onClick={() => {
-                            onAdminTabChange(item.id);
+                            handleAdminNavigation(item.id);
                             setAdminMenuOpen(false);
                           }}
                           className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
@@ -213,9 +391,10 @@ export function Navbar({
               <div className="relative" ref={dropdownRef}>
                 {user?.profileImg ? (
                   <img
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
                     src={user.profileImg}
-                    className="w-9 h-9 rounded-full object-cover"
+                    className="w-9 h-9 rounded-full object-cover cursor-pointer"
+                    alt={user.name}
                     aria-label="User menu"
                   />
                 ) : (
