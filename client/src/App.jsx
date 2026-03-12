@@ -35,6 +35,8 @@ export function App() {
 
   const isSignedIn = !!user;
 
+  console.log("sync test");
+
   useEffect(() => {
     if (token) {
       dispatch(loadUser());
