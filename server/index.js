@@ -18,7 +18,7 @@ import authRoutes from "./routes/authRoutes.js";
 const app = express();
 
 app.use(cors({
-  origin: process.env.NODE_ENV === "production" ? "https://job-portal-e36a.onrender.com" : "http://localhost:5173"
+  origin: process.env.NODE_ENV === "production" ? "https://jobportal-brown-delta.vercel.app" : "http://localhost:5173"
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
