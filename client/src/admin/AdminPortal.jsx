@@ -18,13 +18,13 @@ import { initialApplicants } from "../data/adminMockData";
 import { Navbar } from "../components/Navbar";
 import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "../store/slices/authSlice";
-import { 
-  fetchJobs, 
-  createJob, 
-  updateJob, 
-  deleteJob, 
+import {
+  fetchJobs,
+  createJob,
+  updateJob,
+  deleteJob,
   toggleJobStatus,
-  clearJobError 
+  clearJobError,
 } from "../store/slices/jobSlice";
 import { useNavigate } from "react-router-dom";
 
@@ -72,12 +72,12 @@ export function AdminPortal({ onSwitchToSeeker }) {
   // Filter jobs based on active tab
   const getFilteredJobs = () => {
     if (!jobs) return [];
-    
+
     switch (activeTab) {
       case "active-jobs":
-        return jobs.filter(job => job.isActive);
+        return jobs.filter((job) => job.isActive);
       case "closed-jobs":
-        return jobs.filter(job => !job.isActive);
+        return jobs.filter((job) => !job.isActive);
       case "all-jobs":
       case "manage-jobs":
         return jobs;
@@ -86,26 +86,31 @@ export function AdminPortal({ onSwitchToSeeker }) {
     }
   };
 
-
+  // admin/AdminPortal.jsx (update handlePostJobFull)
   const handlePostJobFull = async (jobData) => {
     try {
       if (editingJob) {
         await dispatch(updateJob({ id: editingJob._id, jobData })).unwrap();
         showNotification("Job updated successfully!");
         setEditingJob(null);
+        setActiveTab("all-jobs");
+        return null; // No matches for edits
       } else {
-        await dispatch(createJob(jobData)).unwrap();
+        const result = await dispatch(createJob(jobData)).unwrap();
         showNotification(`Successfully posted: ${jobData.title}`);
+        return result; // Return the result which contains job and matches
       }
-      setActiveTab("all-jobs");
     } catch (error) {
       showNotification(error || "Failed to save job", "error");
+      throw error;
     }
   };
 
   const handleEditJobSave = async (updatedJob) => {
     try {
-      await dispatch(updateJob({ id: updatedJob._id, jobData: updatedJob })).unwrap();
+      await dispatch(
+        updateJob({ id: updatedJob._id, jobData: updatedJob }),
+      ).unwrap();
       setEditingJob(null);
       showNotification("Job updated successfully!");
     } catch (error) {
@@ -173,11 +178,20 @@ export function AdminPortal({ onSwitchToSeeker }) {
   // Render different content based on active tab
   const renderContent = () => {
     // Job management tabs
-    if (["all-jobs", "active-jobs", "closed-jobs", "manage-jobs"].includes(activeTab)) {
+    if (
+      ["all-jobs", "active-jobs", "closed-jobs", "manage-jobs"].includes(
+        activeTab,
+      )
+    ) {
       const filteredJobs = getFilteredJobs();
-      const tabTitle = activeTab === "all-jobs" ? "All Jobs" :
-                      activeTab === "active-jobs" ? "Active Jobs" :
-                      activeTab === "closed-jobs" ? "Closed Jobs" : "Manage Jobs";
+      const tabTitle =
+        activeTab === "all-jobs"
+          ? "All Jobs"
+          : activeTab === "active-jobs"
+            ? "Active Jobs"
+            : activeTab === "closed-jobs"
+              ? "Closed Jobs"
+              : "Manage Jobs";
 
       return (
         <div className="space-y-6">
@@ -213,8 +227,8 @@ export function AdminPortal({ onSwitchToSeeker }) {
           <h2 className="text-2xl font-bold text-slate-900">
             {editingJob ? "Edit Job" : "Post a New Job"}
           </h2>
-          <FullPostJobForm 
-            onPostJob={handlePostJobFull} 
+          <FullPostJobForm
+            onPostJob={handlePostJobFull}
             initialData={editingJob}
             isEditing={!!editingJob}
           />
@@ -227,7 +241,7 @@ export function AdminPortal({ onSwitchToSeeker }) {
       return (
         <div className="space-y-6 sm:space-y-8">
           <StatsCards stats={stats} loading={loading} />
-          
+
           {/* Mobile Post Job Button */}
           <div className="lg:hidden">
             <button
@@ -247,7 +261,7 @@ export function AdminPortal({ onSwitchToSeeker }) {
                 onStatusChange={handleStatusChange}
                 onDownloadResume={handleDownloadResume}
               />
-              
+
               {/* View All Link */}
               {applicants.length > 5 && (
                 <button
@@ -376,21 +390,36 @@ export function AdminPortal({ onSwitchToSeeker }) {
           {/* Header */}
           <div className="mb-6 sm:mb-8">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 capitalize">
-              {activeTab === "post-job" ? (editingJob ? "Edit Job" : "Post a New Job") : 
-               activeTab === "all-jobs" ? "All Jobs" :
-               activeTab === "active-jobs" ? "Active Jobs" :
-               activeTab === "closed-jobs" ? "Closed Jobs" :
-               activeTab === "manage-jobs" ? "Manage Jobs" :
-               activeTab === "candidates" ? "Candidates" :
-               activeTab === "settings" ? "Settings" :
-               "Dashboard Overview"}
+              {activeTab === "post-job"
+                ? editingJob
+                  ? "Edit Job"
+                  : "Post a New Job"
+                : activeTab === "all-jobs"
+                  ? "All Jobs"
+                  : activeTab === "active-jobs"
+                    ? "Active Jobs"
+                    : activeTab === "closed-jobs"
+                      ? "Closed Jobs"
+                      : activeTab === "manage-jobs"
+                        ? "Manage Jobs"
+                        : activeTab === "candidates"
+                          ? "Candidates"
+                          : activeTab === "settings"
+                            ? "Settings"
+                            : "Dashboard Overview"}
             </h1>
             <p className="text-sm sm:text-base text-slate-500 mt-1">
-              {activeTab === "candidates" ? "Review and manage candidate applications" :
-               activeTab.includes("jobs") ? "View and manage job postings" :
-               activeTab === "post-job" ? (editingJob ? "Edit your job posting" : "Create a new job posting") :
-               activeTab === "settings" ? "Configure your portal settings" :
-               "Welcome back! Here's what's happening with your job postings."}
+              {activeTab === "candidates"
+                ? "Review and manage candidate applications"
+                : activeTab.includes("jobs")
+                  ? "View and manage job postings"
+                  : activeTab === "post-job"
+                    ? editingJob
+                      ? "Edit your job posting"
+                      : "Create a new job posting"
+                    : activeTab === "settings"
+                      ? "Configure your portal settings"
+                      : "Welcome back! Here's what's happening with your job postings."}
             </p>
           </div>
 

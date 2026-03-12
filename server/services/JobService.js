@@ -1,8 +1,8 @@
-import { jobRepository } from "../config/container.js";
-
+import { jobRepository, profileRepository } from "../config/container.js";
+import { jobAlertTemplate } from "../templates/emailTemplate.js";
+import { sendEmail } from "./EmailService.js";
 
 export class JobService {
-
   async getAllJobs() {
     return await jobRepository.findAll();
   }
@@ -34,7 +34,7 @@ export class JobService {
     if (!job) {
       throw new Error("Job not found");
     }
-    
+
     // Check if user is authorized to update this job
     if (job.createdBy.toString() !== userId.toString()) {
       throw new Error("Unauthorized to update this job");
@@ -77,5 +77,239 @@ export class JobService {
       throw new Error("Job not found");
     }
     return await jobRepository.incrementApplicantCount(id);
+  }
+
+  async findMatchingCandidates(job) {
+    try {
+      console.log("Finding matches for job:", job.title);
+      console.log("Job tags:", job.tags);
+
+      // Normalize job tags to lowercase for comparison
+      const jobTags = job.tags.map((tag) => tag.toLowerCase().trim());
+      const jobTitleWords = job.title.toLowerCase().split(" ");
+      const jobCategory = job.category.toLowerCase();
+
+      console.log("Normalized job tags:", jobTags);
+
+      // Find all seeker profiles
+      const profiles = await profileRepository.find()
+
+      console.log(`Found ${profiles.length} total profiles`);
+
+      const matches = [];
+
+      for (const profile of profiles) {
+        // Skip if no user or user is admin
+        if (!profile.user || profile.user.role !== "seeker") {
+          console.log("Skipping profile - no user or not seeker");
+          continue;
+        }
+
+        console.log(`\nChecking profile for user: ${profile.user.name}`);
+        console.log("Profile skills:", profile.skills);
+
+        let matchScore = 0;
+        const matchReasons = [];
+
+        // Check skills match (CASE INSENSITIVE)
+        if (profile.skills && profile.skills.length > 0) {
+          const profileSkills = profile.skills.map((s) =>
+            s.toLowerCase().trim(),
+          );
+          console.log("Normalized profile skills:", profileSkills);
+
+          // Check each job tag against profile skills
+          const matchedSkills = [];
+          for (const tag of jobTags) {
+            for (const skill of profileSkills) {
+              // Check if tag is included in skill OR skill is included in tag
+              if (skill.includes(tag) || tag.includes(skill)) {
+                matchedSkills.push(tag);
+                console.log(`Match found: "${tag}" matches skill "${skill}"`);
+                break;
+              }
+            }
+          }
+
+          if (matchedSkills.length > 0) {
+            // Remove duplicates
+            const uniqueMatches = [...new Set(matchedSkills)];
+            matchScore += uniqueMatches.length * 20; // 20 points per matching skill
+            matchReasons.push(`Skills match: ${uniqueMatches.join(", ")}`);
+            console.log(`Skill match score: ${uniqueMatches.length * 20}`);
+          }
+        }
+
+        // Check preferred roles match
+        if (profile.jobPreferences?.preferredRoles?.length > 0) {
+          const preferredRoles = profile.jobPreferences.preferredRoles.map(
+            (r) => r.toLowerCase().trim(),
+          );
+          console.log("Preferred roles:", preferredRoles);
+
+          // Check job title against preferred roles
+          let roleMatched = false;
+          for (const role of preferredRoles) {
+            for (const word of jobTitleWords) {
+              if (role.includes(word) || word.includes(role)) {
+                roleMatched = true;
+                console.log(
+                  `Role match: "${role}" matches job title word "${word}"`,
+                );
+                break;
+              }
+            }
+            if (roleMatched) break;
+          }
+
+          // Also check job category against preferred roles
+          if (!roleMatched) {
+            for (const role of preferredRoles) {
+              if (role.includes(jobCategory) || jobCategory.includes(role)) {
+                roleMatched = true;
+                console.log(
+                  `Role match: "${role}" matches category "${jobCategory}"`,
+                );
+                break;
+              }
+            }
+          }
+
+          if (roleMatched) {
+            matchScore += 15;
+            matchReasons.push("Job matches your preferred roles");
+            console.log("Role match score: +15");
+          }
+        }
+
+        // Check location preference
+        if (profile.jobPreferences?.preferredLocations?.length > 0) {
+          const preferredLocations =
+            profile.jobPreferences.preferredLocations.map((l) =>
+              l.toLowerCase().trim(),
+            );
+          const jobLocation = job.location.toLowerCase();
+
+          console.log("Preferred locations:", preferredLocations);
+          console.log("Job location:", jobLocation);
+
+          let locationMatched = false;
+          for (const loc of preferredLocations) {
+            if (loc.includes("remote") && jobLocation.includes("remote")) {
+              locationMatched = true;
+              console.log("Location match: remote");
+              break;
+            }
+            if (jobLocation.includes(loc) || loc.includes(jobLocation)) {
+              locationMatched = true;
+              console.log(`Location match: "${loc}" matches "${jobLocation}"`);
+              break;
+            }
+          }
+
+          if (locationMatched) {
+            matchScore += 10;
+            matchReasons.push("Location matches your preferences");
+            console.log("Location match score: +10");
+          }
+        }
+
+        console.log(
+          `Total match score for ${profile.user.name}: ${matchScore}`,
+        );
+
+        // Add to matches if score > 0
+        if (matchScore > 0) {
+          matches.push({
+            user: {
+              _id: profile.user._id,
+              name: profile.user.name,
+              email: profile.user.email,
+              profileImg: profile.user.profileImg,
+            },
+            profile: {
+              skills: profile.skills || [],
+              jobPreferences: profile.jobPreferences,
+            },
+            matchScore: Math.min(matchScore, 100), // Cap at 100
+            matchReasons,
+            skills: profile.skills || [],
+            preferredRoles: profile.jobPreferences?.preferredRoles || [],
+          });
+          console.log(
+            `Added ${profile.user.name} to matches with score ${matchScore}`,
+          );
+        }
+      }
+
+      // Sort by match score descending
+      const sortedMatches = matches.sort((a, b) => b.matchScore - a.matchScore);
+      console.log(`\nTotal matches found: ${sortedMatches.length}`);
+
+      return sortedMatches;
+    } catch (error) {
+      console.error("Error in findMatchingCandidates:", error);
+      throw new Error("Error finding matching candidates: " + error.message);
+    }
+  }
+
+  async createJobWithAlerts(jobData, userId) {
+    try {
+      console.log("Creating job with alerts:", jobData);
+
+      // Create the job
+      const newJob = {
+        ...jobData,
+        createdBy: userId,
+        applicantCount: 0,
+        isActive: true,
+      };
+
+      const job = await jobRepository.create(newJob);
+      console.log("Job created with ID:", job._id);
+
+      // Find matching candidates
+      const matches = await this.findMatchingCandidates(job);
+      console.log(`Found ${matches.length} matching candidates`);
+
+      // Send email alerts to top matches
+      if (matches.length > 0) {
+        const topMatches = matches.slice(0, 50);
+        console.log(`Sending emails to top ${topMatches.length} matches`);
+
+        // Don't await - send in background
+        this.sendJobAlertsToMatches(job, topMatches).catch((err) =>
+          console.error("Error sending job alerts:", err),
+        );
+      }
+
+      // Return job with matches
+      return {
+        ...job.toObject(),
+        matches,
+      };
+    } catch (error) {
+      console.error("Error in createJobWithAlerts:", error);
+      throw new Error("Error creating job with alerts: " + error.message);
+    }
+  }
+  async sendJobAlertsToMatches(job, matches) {
+    const emailPromises = matches.map((match) => {
+      const template = jobAlertTemplate(match.user, job);
+      return sendEmail({
+        to: match.user,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+      });
+    });
+
+    const results = await Promise.allSettled(emailPromises);
+    const successful = results.filter(
+      (r) => r.status === "fulfilled" && r.value,
+    ).length;
+
+    console.log(`Job alerts sent: ${successful}/${matches.length} successful`);
+    return { total: matches.length, successful };
   }
 }

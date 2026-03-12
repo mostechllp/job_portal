@@ -1,6 +1,21 @@
 import { Profile } from "../models/Profile.js";
 
 export class ProfileRepository {
+
+  async find() {
+    try {
+      return await Profile.find()
+      .populate({
+        path: 'user',
+        model: 'User',
+        select: 'name email profileImg role'
+      })
+        .lean();
+    } catch (error) {
+      throw new Error("Error finding profile: " + error.message);
+    }
+  }
+
   async findByUserId(userId) {
     try {
       return await Profile.findOne({ user: userId }).populate(

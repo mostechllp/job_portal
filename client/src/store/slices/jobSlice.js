@@ -10,10 +10,10 @@ export const fetchJobs = createAsyncThunk(
       return response.data.jobs;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch jobs"
+        error.response?.data?.message || "Failed to fetch jobs",
       );
     }
-  }
+  },
 );
 
 export const fetchActiveJobs = createAsyncThunk(
@@ -24,10 +24,10 @@ export const fetchActiveJobs = createAsyncThunk(
       return response.data.jobs;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch active jobs"
+        error.response?.data?.message || "Failed to fetch active jobs",
       );
     }
-  }
+  },
 );
 
 export const createJob = createAsyncThunk(
@@ -35,13 +35,27 @@ export const createJob = createAsyncThunk(
   async (jobData, { rejectWithValue }) => {
     try {
       const response = await API.post("/admin/jobs", jobData);
-      return response.data.job;
+      return response.data; // Should return { job, matches }
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create job"
+        error.response?.data?.message || "Failed to create job",
       );
     }
-  }
+  },
+);
+
+export const fetchJobMatches = createAsyncThunk(
+  "jobs/fetchMatches",
+  async (jobId, { rejectWithValue }) => {
+    try {
+      const response = await API.get(`/admin/jobs/${jobId}/matches`);
+      return { jobId, matches: response.data.matches };
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch matches",
+      );
+    }
+  },
 );
 
 export const updateJob = createAsyncThunk(
@@ -52,24 +66,24 @@ export const updateJob = createAsyncThunk(
       return response.data.job;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update job"
+        error.response?.data?.message || "Failed to update job",
       );
     }
-  }
+  },
 );
 
 export const deleteJob = createAsyncThunk(
   "jobs/deleteJob",
   async (id, { rejectWithValue }) => {
     try {
-      await API.delete(`/jobs/${id}`);
+      await API.delete(`/admin/jobs/${id}`); // Fixed: added /admin/
       return id;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete job"
+        error.response?.data?.message || "Failed to delete job",
       );
     }
-  }
+  },
 );
 
 export const toggleJobStatus = createAsyncThunk(
@@ -80,16 +94,22 @@ export const toggleJobStatus = createAsyncThunk(
       return response.data.job;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to toggle job status"
+        error.response?.data?.message || "Failed to toggle job status",
       );
     }
-  }
+  },
 );
 
 const initialState = {
   jobs: [],
   loading: false,
   error: null,
+  lastPostedJob: null, // Added missing state
+  jobMatches: {}, // Added missing state
+  createLoading: false,
+  updateLoading: false,
+  deleteLoading: false,
+  toggleLoading: false,
 };
 
 const jobSlice = createSlice({
@@ -98,6 +118,12 @@ const jobSlice = createSlice({
   reducers: {
     clearJobError: (state) => {
       state.error = null;
+    },
+    clearLastPostedJob: (state) => {
+      state.lastPostedJob = null;
+    },
+    clearJobMatches: (state) => {
+      state.jobMatches = {};
     },
   },
   extraReducers: (builder) => {
@@ -115,34 +141,110 @@ const jobSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
+      // Fetch Active Jobs
+      .addCase(fetchActiveJobs.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchActiveJobs.fulfilled, (state, action) => {
+        state.loading = false;
+        state.jobs = action.payload;
+      })
+      .addCase(fetchActiveJobs.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       // Create Job
+      .addCase(createJob.pending, (state) => {
+        state.createLoading = true;
+        state.error = null;
+      })
       .addCase(createJob.fulfilled, (state, action) => {
-        state.jobs.unshift(action.payload);
+        state.createLoading = false;
+        state.jobs.unshift(action.payload.job);
+        state.lastPostedJob = {
+          job: action.payload.job,
+          matches: action.payload.matches || [],
+        };
       })
-      
+      .addCase(createJob.rejected, (state, action) => {
+        state.createLoading = false;
+        state.error = action.payload;
+      })
+
       // Update Job
+      .addCase(updateJob.pending, (state) => {
+        state.updateLoading = true;
+        state.error = null;
+      })
       .addCase(updateJob.fulfilled, (state, action) => {
-        const index = state.jobs.findIndex(job => job._id === action.payload._id);
+        state.updateLoading = false;
+        const index = state.jobs.findIndex(
+          (job) => job._id === action.payload._id,
+        );
         if (index !== -1) {
           state.jobs[index] = action.payload;
         }
       })
-      
+      .addCase(updateJob.rejected, (state, action) => {
+        state.updateLoading = false;
+        state.error = action.payload;
+      })
+
+      // Fetch Job Matches
+      .addCase(fetchJobMatches.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchJobMatches.fulfilled, (state, action) => {
+        state.loading = false;
+        state.jobMatches = {
+          ...state.jobMatches,
+          [action.payload.jobId]: action.payload.matches,
+        };
+      })
+      .addCase(fetchJobMatches.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       // Delete Job
-      .addCase(deleteJob.fulfilled, (state, action) => {
-        state.jobs = state.jobs.filter(job => job._id !== action.payload);
+      .addCase(deleteJob.pending, (state) => {
+        state.deleteLoading = true;
+        state.error = null;
       })
-      
+      .addCase(deleteJob.fulfilled, (state, action) => {
+        state.deleteLoading = false;
+        state.jobs = state.jobs.filter((job) => job._id !== action.payload);
+      })
+      .addCase(deleteJob.rejected, (state, action) => {
+        state.deleteLoading = false;
+        state.error = action.payload;
+      })
+
       // Toggle Job Status
+      .addCase(toggleJobStatus.pending, (state) => {
+        state.toggleLoading = true;
+        state.error = null;
+      })
       .addCase(toggleJobStatus.fulfilled, (state, action) => {
-        const index = state.jobs.findIndex(job => job._id === action.payload._id);
+        state.toggleLoading = false;
+        const index = state.jobs.findIndex(
+          (job) => job._id === action.payload._id,
+        );
         if (index !== -1) {
           state.jobs[index] = action.payload;
         }
+      })
+      .addCase(toggleJobStatus.rejected, (state, action) => {
+        state.toggleLoading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearJobError } = jobSlice.actions;
+export const { clearJobError, clearLastPostedJob, clearJobMatches } =
+  jobSlice.actions;
 export default jobSlice.reducer;

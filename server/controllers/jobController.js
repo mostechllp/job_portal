@@ -1,6 +1,5 @@
 import { jobService } from "../config/container.js";
 export class JobController {
-
   getAllJobs = async (req, res, next) => {
     try {
       const jobs = await jobService.getAllJobs();
@@ -42,12 +41,28 @@ export class JobController {
     try {
       const jobData = req.body;
       const userId = req.user._id;
-      
-      const newJob = await jobService.createJob(jobData, userId);
-      
+
+      const newJob = await jobService.createJobWithAlerts(jobData, userId);
+
       res.status(201).json({
         message: "Job created successfully",
         job: newJob,
+        matches: newJob.matches,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getJobMatches = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const job = await jobService.getJobById(id);
+      const matches = await jobService.findMatchingCandidates(job);
+
+      res.status(200).json({
+        message: "Matches fetched successfully",
+        matches,
       });
     } catch (error) {
       next(error);
@@ -59,9 +74,9 @@ export class JobController {
       const { id } = req.params;
       const updateData = req.body;
       const userId = req.user._id;
-      
+
       const updatedJob = await jobService.updateJob(id, updateData, userId);
-      
+
       res.status(200).json({
         message: "Job updated successfully",
         job: updatedJob,
@@ -75,9 +90,9 @@ export class JobController {
     try {
       const { id } = req.params;
       const userId = req.user._id;
-      
+
       await jobService.deleteJob(id, userId);
-      
+
       res.status(200).json({
         message: "Job deleted successfully",
       });
@@ -90,9 +105,9 @@ export class JobController {
     try {
       const { id } = req.params;
       const userId = req.user._id;
-      
+
       const updatedJob = await jobService.toggleJobStatus(id, userId);
-      
+
       res.status(200).json({
         message: "Job status updated successfully",
         job: updatedJob,

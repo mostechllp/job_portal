@@ -206,3 +206,111 @@ export const passwordResetSuccessTemplate = (user) => ({
   `,
   text: `Hello ${user.name},\n\nYour password has been successfully reset. You can now log in with your new password.\n\nIf you didn't make this change, please contact support immediately.`,
 });
+
+export const jobAlertTemplate = (user, job) => {
+  const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const jobUrl = `${baseUrl}/jobs/${job._id}`;
+  return {
+    subject: `New Job Alert: ${job.title} at ${job.company}`,
+    html: `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>New Job Opportunity</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc;">
+      <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <!-- Main Card -->
+        <div style="background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); border-radius: 24px; box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 8px 20px -8px rgba(79, 70, 229, 0.2); overflow: hidden; border: 1px solid #eef2f6;">
+          
+          <!-- Header with Gradient -->
+          <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 40px 30px; text-align: center;">
+            <div style="width: 70px; height: 70px; background: rgba(255, 255, 255, 0.2); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4zm10 16H4V8h16v12z" fill="white"/>
+              </svg>
+            </div>
+            <h1 style="color: black; font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">New Job Opportunity! 🎯</h1>
+            <p style="color: rgba(255, 255, 255, 0.9); font-size: 16px; margin-top: 10px; font-weight: 400;">We found a job that matches your skills</p>
+          </div>
+
+          <!-- Content -->
+          <div style="padding: 40px 30px; background: #ffffff;">
+            <div style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border-radius: 20px; padding: 30px; margin-bottom: 30px; border: 1px solid #ddd6fe;">
+              <p style="color: #1e293b; font-size: 18px; font-weight: 500; margin: 0 0 10px 0;">Hello <span style="color: #4f46e5; font-weight: 700;">${user.name}</span>,</p>
+              <p style="color: #475569; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Great news! A new job has been posted that matches your profile:</p>
+              
+              <!-- Job Details Card -->
+              <div style="background: white; border-radius: 16px; padding: 25px; box-shadow: 0 4px 6px -2px rgba(79, 70, 229, 0.1); border: 1px solid #e0e7ff;">
+                <h2 style="color: #1e293b; font-size: 24px; font-weight: 700; margin: 0 0 10px 0;">${job.title}</h2>
+                <p style="color: #4f46e5; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">${job.company}</p>
+                
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                  <div style="background: #f5f3ff; padding: 8px 16px; border-radius: 30px;">
+                    <span style="color: #4f46e5; font-size: 14px;">📍 ${job.location}</span>
+                  </div>
+                  <div style="background: #f5f3ff; padding: 8px 16px; border-radius: 30px;">
+                    <span style="color: #4f46e5; font-size: 14px;">💰 ${job.salary}</span>
+                  </div>
+                  <div style="background: #f5f3ff; padding: 8px 16px; border-radius: 30px;">
+                    <span style="color: #4f46e5; font-size: 14px;">🏷️ ${job.category}</span>
+                  </div>
+                </div>
+
+                ${
+                  job.tags && job.tags.length > 0
+                    ? `
+                <div style="margin-bottom: 20px;">
+                  <p style="color: #64748b; font-size: 14px; font-weight: 500; margin: 0 0 10px 0;">Required Skills:</p>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    ${job.tags
+                      .map(
+                        (tag) => `
+                      <span style="background: #e0e7ff; color: #4f46e5; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">${tag}</span>
+                    `,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+                `
+                    : ""
+                }
+
+                <div style="margin: 25px 0; text-align: center;">
+                  <a href="${jobUrl}" 
+                     style="display: inline-block; background: #4f46e5; color: white; padding: 14px 32px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px -2px rgba(79, 70, 229, 0.3);">
+                    View Job Details →
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Why this job matches -->
+            <div style="background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                <div style="width: 32px; height: 32px; background: #4f46e5; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <span style="color: white; font-size: 18px;">✓</span>
+                </div>
+                <p style="color: #1e293b; font-size: 16px; font-weight: 600; margin: 0;">Why this job matches you</p>
+              </div>
+              <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">✓ Skills required match your profile</p>
+              <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">✓ Location preference aligns</p>
+              <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0;">✓ Category matches your interests</p>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="background: #f1f5f9; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #475569; font-size: 14px; margin: 0 0 10px 0;">Don't miss this opportunity!</p>
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">© 2024 CareerHub. All rights reserved.</p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `,
+    text: `Hello ${user.name},\n\nA new job has been posted that matches your profile:\n\n${job.title} at ${job.company}\nLocation: ${job.location}\nSalary: ${job.salary}\n\nView the job here: ${jobUrl}`,
+  };
+};
