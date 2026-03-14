@@ -1,4 +1,3 @@
-// admin/AdminPortal.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import {
   PlusCircleIcon,
@@ -14,10 +13,10 @@ import { JobManager } from "./JobManager";
 import { EditJobModal } from "./EditJobModal";
 import { SettingsPage } from "./SettingsPage";
 import { AdminProfilePanel } from "./AdminProfilePanel";
-import { initialApplicants } from "../data/adminMockData";
-import { Navbar } from "../components/Navbar";
+import { initialApplicants } from "../../data/adminMockData";
+import { Navbar } from "../common/Navbar";
 import { useDispatch, useSelector } from "react-redux";
-import { signOut } from "../store/slices/authSlice";
+import { signOut } from "../../store/slices/authSlice";
 import {
   fetchJobs,
   createJob,
@@ -25,7 +24,7 @@ import {
   deleteJob,
   toggleJobStatus,
   clearJobError,
-} from "../store/slices/jobSlice";
+} from "../../store/slices/jobSlice";
 import { useNavigate } from "react-router-dom";
 
 export function AdminPortal({ onSwitchToSeeker }) {

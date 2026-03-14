@@ -45,7 +45,6 @@ export class ProfileService {
     return await profileRepository.deleteExperience(userId, experienceId);
   }
 
-  // In profile.service.js - uploadResume function
   async uploadResume(userId, file, existingResumePublicId = null) {
     try {
       if (existingResumePublicId) {
@@ -60,15 +59,11 @@ export class ProfileService {
       const fileType = file.mimetype;
       const fileExtension = file.originalname.split(".").pop().toLowerCase();
 
-      console.log(`Uploading resume: ${file.originalname} (${fileType})`);
-
       const uploadResult = await uploadToCloudinary(file, {
         folder: "resumes",
         userId: userId,
         userName: user.name,
       });
-
-      console.log("Upload result from Cloudinary:", uploadResult);
 
       // Store the EXACT URL from Cloudinary first
       const resumeData = {
@@ -80,8 +75,6 @@ export class ProfileService {
         fileExtension: fileExtension,
         uploadedAt: new Date(),
       };
-
-      console.log("Saving resume data:", resumeData);
       return await profileRepository.updateResume(userId, resumeData);
     } catch (error) {
       console.error("Error uploading resume:", error);
@@ -130,8 +123,6 @@ export class ProfileService {
   async removeLanguage(userId, language) {
     return await profileRepository.removeLanguage(userId, language);
   }
-
-  // services/profile.service.js
 
   async uploadProfileImage(userId, file) {
     try {

@@ -1,4 +1,3 @@
-// models/Job.js
 import mongoose, { Schema } from "mongoose";
 
 const JobSchema = new Schema(

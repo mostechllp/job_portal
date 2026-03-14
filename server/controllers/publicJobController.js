@@ -1,10 +1,7 @@
-// controllers/PublicJobController.js
 import { jobService } from "../config/container.js";
 
 export class PublicJobController {
-  // controllers/PublicJobController.js
   getPublicJobs = async (req, res, next) => {
-    console.log("📋 getPublicJobs controller hit!");
 
     try {
       const { page = 1, limit = 10, category, location, type } = req.query;
@@ -17,12 +14,10 @@ export class PublicJobController {
         type,
       });
 
-      console.log("Jobs fetched successfully, count:", result.data.length);
-
       // Send the response in the format the frontend expects
       res.status(200).json({
         message: "Jobs fetched successfully",
-        jobs: result.data, // Send as 'jobs', not 'jobs.data'
+        jobs: result.data, 
         pagination: result.pagination,
       });
     } catch (error) {

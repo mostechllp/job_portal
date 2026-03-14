@@ -35,7 +35,7 @@ export const createJob = createAsyncThunk(
   async (jobData, { rejectWithValue }) => {
     try {
       const response = await API.post("/admin/jobs", jobData);
-      return response.data; // Should return { job, matches }
+      return response.data; 
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create job",
@@ -76,7 +76,7 @@ export const deleteJob = createAsyncThunk(
   "jobs/deleteJob",
   async (id, { rejectWithValue }) => {
     try {
-      await API.delete(`/admin/jobs/${id}`); // Fixed: added /admin/
+      await API.delete(`/admin/jobs/${id}`); 
       return id;
     } catch (error) {
       return rejectWithValue(
@@ -104,8 +104,8 @@ const initialState = {
   jobs: [],
   loading: false,
   error: null,
-  lastPostedJob: null, // Added missing state
-  jobMatches: {}, // Added missing state
+  lastPostedJob: null,
+  jobMatches: {}, 
   createLoading: false,
   updateLoading: false,
   deleteLoading: false,

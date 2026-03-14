@@ -1,4 +1,3 @@
-// admin/JobManager.jsx
 import React from "react";
 import { Trash2Icon, UsersIcon, PencilIcon, Loader2 } from "lucide-react";
 

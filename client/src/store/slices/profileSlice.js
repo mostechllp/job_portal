@@ -34,8 +34,6 @@ export const updateProfile = createAsyncThunk(
   },
 );
 
-// store/slices/profileSlice.js - update these thunks
-
 export const uploadProfileImage = createAsyncThunk(
   "profile/uploadProfileImage",
   async (formData, { rejectWithValue }) => {
@@ -47,10 +45,9 @@ export const uploadProfileImage = createAsyncThunk(
         },
       });
 
-      // Make sure to return both profile and user data
       return {
         profile: response.data.profile,
-        user: response.data.user, // This should contain updated profileImg
+        user: response.data.user, 
       };
     } catch (error) {
       return rejectWithValue(
@@ -69,7 +66,7 @@ export const deleteProfileImage = createAsyncThunk(
       });
       return {
         profile: response.data.profile,
-        user: response.data.user, // This should contain null profileImg
+        user: response.data.user, 
       };
     } catch (error) {
       return rejectWithValue(
@@ -350,7 +347,7 @@ const profileSlice = createSlice({
       .addCase(uploadProfileImage.fulfilled, (state, action) => {
         state.loading = false;
         state.profile = action.payload.profile;
-        // Also store the user data if you want to use it in profile slice
+        // store the user data if you want to use it in profile slice
         if (action.payload.user) {
           state.user = action.payload.user;
         }

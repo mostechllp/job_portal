@@ -1,12 +1,11 @@
-// components/JobFeed.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { JobCard } from "./JobCard";
 import { FilterIcon, Loader2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchJobs, fetchAppliedJobs } from "../store/slices/seekerJobSlice";
+import { fetchJobs, fetchAppliedJobs } from "../../store/slices/seekerJobSlice";
 
 export function JobFeed({
-  jobs: propJobs, // Rename to avoid confusion
+  jobs: propJobs, 
   appliedJobs: propAppliedJobs = [],
   onJobClick,
   onQuickApply,
@@ -33,7 +32,6 @@ export function JobFeed({
     if (prevFiltersRef.current !== filtersString) {
       prevFiltersRef.current = filtersString;
       
-      // 🔥 FIX: Dispatch fetchJobs to get jobs from backend
       dispatch(fetchJobs({ page, ...filters }));
     }
   }, [dispatch, page, filters]);
@@ -44,13 +42,6 @@ export function JobFeed({
       dispatch(fetchAppliedJobs());
     }
   }, [dispatch, showApplied]);
-
-  // Debug logs
-  console.log('🔥 JobFeed rendering:');
-  console.log('  - jobs from Redux:', reduxJobs);
-  console.log('  - jobs length:', jobs?.length);
-  console.log('  - loading:', loading);
-  console.log('  - showApplied:', showApplied);
 
   const handleLoadMore = () => {
     if (page < pagination.pages) {

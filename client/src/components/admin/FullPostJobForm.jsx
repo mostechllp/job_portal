@@ -1,4 +1,3 @@
-// components/FullPostJobForm.jsx (add scroll to matches)
 import React, { useState, useEffect, useRef } from "react";
 import { PlusIcon, Loader2, UsersIcon } from "lucide-react";
 import { MatchingCandidates } from "../admin/MatchingCandidates";

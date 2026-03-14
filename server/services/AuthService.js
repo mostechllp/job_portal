@@ -166,8 +166,6 @@ export class AuthService {
       user.resetPasswordExpires = otpExpires;
       await user.save();
 
-      console.log(`Password reset OTP for ${email}: ${otp}`);
-
       const template = passwordResetTemplate(user, otp);
 
       await sendEmail({

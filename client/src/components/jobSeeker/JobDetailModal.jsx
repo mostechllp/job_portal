@@ -1,4 +1,3 @@
-// components/JobDetailModal.jsx
 import React, { useEffect, useState } from 'react';
 import { XIcon, MapPinIcon, ClockIcon, ZapIcon, CheckIcon, BuildingIcon } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';

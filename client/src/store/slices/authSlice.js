@@ -126,7 +126,7 @@ export const adminLogin = createAsyncThunk(
     try {
       const response = await API.post("/auth/admin-login", credentials);
       localStorage.setItem("token", response.data.token);
-      localStorage.setItem("adminToken", response.data.token); // Optional: separate token
+      localStorage.setItem("adminToken", response.data.token); 
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || "Admin login failed";

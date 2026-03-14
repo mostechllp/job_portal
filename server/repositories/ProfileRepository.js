@@ -31,7 +31,7 @@ export class ProfileRepository {
     try {
       // Create a new profile with just the user ID
       const profileData = {
-        user: userId, // This should be just the ID string/value, not an object
+        user: userId, 
         skills: [],
         experience: [],
         education: [],

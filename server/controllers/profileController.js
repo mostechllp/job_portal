@@ -185,8 +185,6 @@ export class ProfileController {
     }
   }
 
-  // controllers/profile.controller.js
-
   async uploadProfileImage(req, res, next) {
     try {
       if (!req.file) {
@@ -207,19 +205,18 @@ export class ProfileController {
           .json({ message: "File size must be less than 5MB" });
       }
 
-      // This should return the updated user with profileImg
       const updatedUser = await profileService.uploadProfileImage(
         req.user._id,
         req.file,
       );
 
-      // Also get the profile to return complete data
+      // get the profile to return complete data
       const profile = await profileService.getProfile(req.user._id);
 
       res.status(200).json({
         message: "Profile image uploaded successfully",
         profile,
-        user: updatedUser, // Return the updated user data
+        user: updatedUser, 
       });
     } catch (error) {
       next(error);
@@ -228,16 +225,14 @@ export class ProfileController {
 
   async deleteProfileImage(req, res, next) {
     try {
-      // This should return the updated user with profileImg = null
       const updatedUser = await profileService.deleteProfileImage(req.user._id);
 
-      // Also get the profile to return complete data
       const profile = await profileService.getProfile(req.user._id);
 
       res.status(200).json({
         message: "Profile image deleted successfully",
         profile,
-        user: updatedUser, // Return the updated user data
+        user: updatedUser, 
       });
     } catch (error) {
       next(error);

@@ -7,7 +7,7 @@ import {
   registerUser,
   verifyOTP,
   resendOTP,
-} from "../store/slices/authSlice";
+} from "../../store/slices/authSlice";
 
 export function AuthModal({
   isOpen,
@@ -69,7 +69,6 @@ export function AuthModal({
   if (!isOpen && !isAnimating) return null;
 
   const onSignInSubmit = async (data) => {
-    console.log("Login data:", data);
     const result = await dispatch(
       loginUser({
         email: data.email,
@@ -83,7 +82,6 @@ export function AuthModal({
   };
 
   const onRegisterSubmit = async (data) => {
-    console.log("Register data:", data);
     const result = await dispatch(registerUser(data));
     if (registerUser.fulfilled.match(result)) {
       setStep(2);

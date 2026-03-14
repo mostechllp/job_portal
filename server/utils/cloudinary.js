@@ -95,9 +95,6 @@ export const uploadToCloudinary = async (file, options = {}) => {
     const b64 = Buffer.from(file.buffer).toString("base64");
     const dataURI = `data:${file.mimetype};base64,${b64}`;
 
-    console.log(`Uploading file: ${file.originalname} (${file.mimetype})`);
-    console.log(`Public ID: ${publicId}`);
-
     // Upload with raw resource type for all documents
     const uploadResult = await cloudinary.uploader.upload(dataURI, {
       resource_type: "raw",
@@ -105,8 +102,6 @@ export const uploadToCloudinary = async (file, options = {}) => {
       access_mode: "public",
       ...options,
     });
-
-    console.log("Cloudinary upload result:", uploadResult);
 
     return {
       ...uploadResult,
@@ -122,7 +117,6 @@ export const uploadToCloudinary = async (file, options = {}) => {
 // Delete from Cloudinary
 export const deleteFromCloudinary = async (publicId, resourceType = "raw") => {
   try {
-    console.log(`Deleting from Cloudinary: ${publicId} (${resourceType})`);
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType,
     });
@@ -147,8 +141,6 @@ export const uploadProfileImage = async (file, userId, userName) => {
     const b64 = Buffer.from(file.buffer).toString("base64");
     const dataURI = `data:${file.mimetype};base64,${b64}`;
 
-    console.log(`Uploading profile image for user: ${userName}`);
-
     const uploadResult = await cloudinary.uploader.upload(dataURI, {
       resource_type: "image",
       public_id: publicId,
@@ -161,7 +153,6 @@ export const uploadProfileImage = async (file, userId, userName) => {
       ]
     });
 
-    console.log("Profile image upload result:", uploadResult);
     return uploadResult;
   } catch (error) {
     console.error("Cloudinary profile image upload error:", error);

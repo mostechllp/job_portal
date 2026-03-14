@@ -1,6 +1,5 @@
-// pages/AdminDashboardPage.jsx
 import React from "react";
-import { AdminPortal } from "../admin/AdminPortal";
+import { AdminPortal } from "../components/admin/AdminPortal";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 

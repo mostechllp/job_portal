@@ -1,23 +1,18 @@
 /* eslint-disable no-unused-vars */
-// store/slices/seekerJobSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import API from "../../api/axios";
 
-// store/slices/seekerJobSlice.js
 export const fetchJobs = createAsyncThunk(
   "seekerJobs/fetchJobs",
   async (params = {}, { rejectWithValue }) => {
     try {
-      // Optional: Add debouncing logic here
       const cleanParams = Object.fromEntries(
         Object.entries(params).filter(([_, v]) => v != null && v !== '')
       );
       
       const queryParams = new URLSearchParams(cleanParams).toString();
       const response = await API.get(`/jobs?${queryParams}`);
-      console.log('🔥 API Response:', response.data);
-      console.log('🔥 Jobs array:', response.data.jobs);
-      console.log('🔥 Pagination:', response.data.pagination);
+      console.log("Job response: ", response.data)
       return response.data;
     } catch (error) {
       return rejectWithValue(

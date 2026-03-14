@@ -11,7 +11,7 @@ import {
   forgotPassword,
   verifyResetOTP,
   resetPassword,
-} from "../store/slices/authSlice";
+} from "../../store/slices/authSlice";
 
 export function ForgotPasswordModal({ isOpen, onClose, onBackToSignIn }) {
   const [step, setStep] = useState(1); // 1: email, 2: otp, 3: new password
@@ -62,10 +62,6 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToSignIn }) {
     if (forgotPassword.fulfilled.match(result)) {
       setStep(2);
       setTimer(60);
-      if (result.payload?.dev_otp) {
-        console.log("📝 Development OTP:", result.payload.dev_otp);
-        setOtp(result.payload.dev_otp);
-      }
     }
   };
 
@@ -104,7 +100,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToSignIn }) {
     if (resetPassword.fulfilled.match(result)) {
       // Success - close modal and show success message or go to sign in
       onClose();
-      // Optionally switch to sign in modal
+      // switch to sign in modal
       if (onBackToSignIn) {
         setTimeout(() => onBackToSignIn(), 300);
       }

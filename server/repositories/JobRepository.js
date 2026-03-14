@@ -1,4 +1,3 @@
-// repositories/JobRepository.js
 import { Job } from "../models/Job.js";
 
 export class JobRepository {
@@ -78,13 +77,9 @@ export class JobRepository {
     }
   }
 
-  // repositories/JobRepository.js
   async findPublic(query, options = {}) {
     try {
       const { skip = 0, limit = 10, sort = { createdAt: -1 } } = options;
-
-      console.log("Repository findPublic query:", query); // Debug log
-      console.log("Repository options:", { skip, limit, sort }); // Debug log
 
       const jobs = await Job.find(query)
         .select("-createdBy -__v") // Exclude sensitive fields
@@ -92,8 +87,6 @@ export class JobRepository {
         .skip(skip)
         .limit(limit)
         .lean();
-
-      console.log(`Repository found ${jobs.length} jobs`); // Debug log
 
       return jobs;
     } catch (error) {
@@ -104,9 +97,7 @@ export class JobRepository {
 
   async countDocuments(query) {
     try {
-      console.log("Repository countDocuments query:", query); // Debug log
       const count = await Job.countDocuments(query);
-      console.log("Repository count:", count); // Debug log
       return count;
     } catch (error) {
       console.error("Error in countDocuments repository:", error);

@@ -1,4 +1,3 @@
-// components/JobCard.jsx
 import React from 'react';
 import { MapPinIcon, ClockIcon, ZapIcon, CheckIcon, BookmarkIcon, BuildingIcon } from 'lucide-react';
 

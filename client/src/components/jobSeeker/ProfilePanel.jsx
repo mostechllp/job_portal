@@ -1,4 +1,3 @@
-// components/ProfilePanel.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -37,8 +36,8 @@ import {
   clearUploadProgress,
   deleteProfileImage,
   uploadProfileImage,
-} from "../store/slices/profileSlice";
-import { updateUserProfileImage } from "../store/slices/authSlice"; // You'll need to create this action
+} from "../../store/slices/profileSlice";
+import { updateUserProfileImage } from "../../store/slices/authSlice";
 
 export function ProfilePanel({ isOpen, onClose }) {
   const dispatch = useDispatch();
@@ -235,14 +234,14 @@ export function ProfilePanel({ isOpen, onClose }) {
 
     try {
       const result = await dispatch(uploadProfileImage(formData)).unwrap();
-      
+
       // If the API returns user data with updated profileImg, update it in auth slice
       if (result.user?.profileImg) {
         dispatch(updateUserProfileImage(result.user.profileImg));
       } else if (result.profile?.user?.profileImg) {
         dispatch(updateUserProfileImage(result.profile.user.profileImg));
       }
-      
+
       setImageUploadStatus({
         type: "success",
         message: "Profile image updated successfully",
@@ -269,10 +268,10 @@ export function ProfilePanel({ isOpen, onClose }) {
 
     try {
       await dispatch(deleteProfileImage()).unwrap();
-      
+
       // Update auth slice with null profile image
       dispatch(updateUserProfileImage(null));
-      
+
       setImageUploadStatus({
         type: "success",
         message: "Profile image deleted successfully",
@@ -589,7 +588,6 @@ export function ProfilePanel({ isOpen, onClose }) {
               <div className="flex items-center gap-5 mb-8">
                 <div className="relative group">
                   <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-2xl flex-shrink-0 border-4 border-white shadow-sm overflow-hidden">
-                    {/* Use user.profileImg directly - this will update immediately when auth state changes */}
                     {user?.profileImg ? (
                       <img
                         src={user.profileImg}
