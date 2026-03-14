@@ -14,6 +14,9 @@ export function JobsPage() {
   const [selectedJob, setSelectedJob] = useState(null); 
   const [appliedJobs, ] = useState([]); 
 
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState("signin");
+
   useEffect(() => {
     const query = searchParams.get('q');
     const location = searchParams.get('location');
@@ -30,7 +33,8 @@ export function JobsPage() {
     const isSignedIn = !!localStorage.getItem('token'); 
     
     if (!isSignedIn) {
-      <AuthModal/>
+      setAuthModalMode("signin");
+      setShowAuthModal(true);
       return;
     }
     
@@ -124,6 +128,12 @@ export function JobsPage() {
           isApplied={isJobApplied(selectedJob._id)}
         />
       )}
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode={authModalMode}
+      />
     </div>
   );
 }
