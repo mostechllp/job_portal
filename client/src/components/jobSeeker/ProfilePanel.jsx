@@ -1428,15 +1428,17 @@ export function ProfilePanel({ isOpen, onClose }) {
                         </label>
                         <select
                           name="jobPreferences.workType"
-                          value={formData.jobPreferences?.workType || "any"}
+                          value={formData.jobPreferences?.workType || "full-time"}
                           onChange={handleInputChange}
                           disabled={!isEditing}
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors outline-none disabled:opacity-60"
                         >
-                          <option value="any">Any</option>
-                          <option value="remote">Remote</option>
-                          <option value="hybrid">Hybrid</option>
-                          <option value="on-site">On-site</option>
+                          <option value="full-time">Full Time</option>
+                          <option value="part-time">Part Time</option>
+                          <option value="internship">Internship</option>
+                          <option value="contract">Contract</option>
+                          <option value="temporary">Temporary</option>
+                          <option value="freelance">Freelance</option>
                         </select>
                       </div>
 

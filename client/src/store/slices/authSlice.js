@@ -7,7 +7,7 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await API.post("/auth/login", credentials);
-      return response.data; 
+      return response.data;
     } catch (error) {
       const message = error.response?.data?.message || "Login failed";
       return rejectWithValue(message);
@@ -172,7 +172,11 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
+        const userData = action.payload.user;
+        state.user = {
+          ...userData,
+          _id: userData.id || userData._id,
+        };
         state.token = action.payload.token;
         state.isInitialized = true;
         state.error = null;
@@ -188,7 +192,12 @@ const authSlice = createSlice({
         state.loading = true;
       })
       .addCase(loadUser.fulfilled, (state, action) => {
-        state.user = action.payload.user;
+        const userData = action.payload.user || action.payload;
+
+        state.user = {
+          ...userData,
+          _id: userData.id || userData._id,
+        };
         state.loading = false;
         state.isInitialized = true;
         state.error = null;
@@ -252,7 +261,7 @@ const authSlice = createSlice({
         state.isInitialized = true;
         state.error = action.payload;
       })
-      
+
       // Forgot Password
       .addCase(forgotPassword.pending, (state) => {
         state.loading = true;
@@ -300,7 +309,7 @@ const authSlice = createSlice({
         state.isInitialized = true;
         state.error = action.payload;
       })
-      
+
       // admin login
       .addCase(adminLogin.pending, (state) => {
         state.loading = true;
@@ -321,5 +330,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { signOut, updateUserProfileImage, setInitialized, rehydrate } = authSlice.actions;
+export const { signOut, updateUserProfileImage, setInitialized, rehydrate } =
+  authSlice.actions;
 export default authSlice.reducer;

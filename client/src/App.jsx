@@ -8,6 +8,7 @@ export function App() {
   const { token, user, isInitialized } = useSelector((state) => state.auth);
 
   useEffect(() => {
+    
     // If we have a token but no user data, load the user
     if (token && !user) {
       dispatch(loadUser());

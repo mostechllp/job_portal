@@ -13,9 +13,10 @@ import { ProfilePanel } from "../components/jobSeeker/ProfilePanel";
 import { ForgotPasswordModal } from "../components/common/ForgotPasswordModal";
 
 import { useDispatch, useSelector } from "react-redux";
-import { loadUser, signOut } from "../store/slices/authSlice";
+import { signOut } from "../store/slices/authSlice";
 import BannerCarousel from "../components/common/BannerCorousel";
 
+// pages/HomePage.jsx
 export function HomePage() {
   const { user, token, loading } = useSelector((state) => state.auth);
   const { jobs } = useSelector((state) => state.seekerJobs);
@@ -24,22 +25,23 @@ export function HomePage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState("signin");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-
   const [appliedJobs, setAppliedJobs] = useState([]);
-
   const [selectedJob, setSelectedJob] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [applyModalJob, setApplyModalJob] = useState(null);
-
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+
+  // Add state for admin tab (even though not used in HomePage)
+  const [adminActiveTab, setAdminActiveTab] = useState("overview");
 
   const isSignedIn = !!user;
 
   useEffect(() => {
-    if (token) {
-      dispatch(loadUser());
-    }
-  }, [dispatch, token]);
+  console.log("🏠 HOMEPAGE DEBUG:");
+  console.log("  user from Redux:", user);
+  console.log("  user role:", user?.role);
+  console.log("  isSignedIn:", !!user);
+}, [user]);
 
   if (loading && token) {
     return (
@@ -70,6 +72,11 @@ export function HomePage() {
     setApplyModalJob(job);
   };
 
+  // Dummy function for admin tab change (not used in HomePage)
+  const handleAdminTabChange = (tabId) => {
+    setAdminActiveTab(tabId);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       <Navbar
@@ -80,6 +87,9 @@ export function HomePage() {
         onSignOut={handleSignOut}
         onMobileMenuClick={() => setMobileDrawerOpen(true)}
         savedJobsCount={savedJobs.length}
+        isAdminRoute={false}
+        adminActiveTab={adminActiveTab} // 👈 ADD THIS
+        onAdminTabChange={handleAdminTabChange} // 👈 ADD THIS
       />
 
       <BannerCarousel />

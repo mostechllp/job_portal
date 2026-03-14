@@ -81,7 +81,7 @@ const ProfileSchema = new Schema(
           "temporary",
           "freelance",
         ],
-        default: "any",
+        default: "full-time",
       },
       preferredLocations: [String],
       noticePeriod: {
