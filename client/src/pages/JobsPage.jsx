@@ -1,4 +1,3 @@
-// pages/JobsPage.jsx
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -6,7 +5,6 @@ import { searchJobs } from '../store/slices/seekerJobSlice';
 import { JobCard } from '../components/jobSeeker/JobCard';
 import { FilterSidebar } from '../components/jobSeeker/FilterSidebar';
 import { JobDetailModal } from '../components/jobSeeker/JobDetailModal'; 
-import { AuthController } from '../../../server/controllers/authController';
 import { AuthModal } from '../components/common/AuthModal';
 
 export function JobsPage() {
