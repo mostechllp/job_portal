@@ -7,33 +7,18 @@ export const fetchJobs = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const cleanParams = Object.fromEntries(
-        Object.entries(params).filter(([_, v]) => v != null && v !== '')
+        Object.entries(params).filter(([_, v]) => v != null && v !== ""),
       );
-      
+
       const queryParams = new URLSearchParams(cleanParams).toString();
       const response = await API.get(`/jobs?${queryParams}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch jobs"
+        error.response?.data?.message || "Failed to fetch jobs",
       );
     }
-  }
-);
-
-export const searchJobs = createAsyncThunk(
-  "seekerJobs/searchJobs",
-  async (searchParams, { rejectWithValue }) => {
-    try {
-      const queryParams = new URLSearchParams(searchParams).toString();
-      const response = await API.get(`/jobs/search?${queryParams}`);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to search jobs"
-      );
-    }
-  }
+  },
 );
 
 export const fetchJobDetails = createAsyncThunk(
@@ -44,10 +29,10 @@ export const fetchJobDetails = createAsyncThunk(
       return response.data.job;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch job details"
+        error.response?.data?.message || "Failed to fetch job details",
       );
     }
-  }
+  },
 );
 
 export const fetchSimilarJobs = createAsyncThunk(
@@ -58,10 +43,10 @@ export const fetchSimilarJobs = createAsyncThunk(
       return response.data.jobs;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch similar jobs"
+        error.response?.data?.message || "Failed to fetch similar jobs",
       );
     }
-  }
+  },
 );
 
 export const applyForJob = createAsyncThunk(
@@ -70,15 +55,15 @@ export const applyForJob = createAsyncThunk(
     try {
       const response = await API.post(`/applications`, {
         jobId,
-        ...applicationData
+        ...applicationData,
       });
       return response.data.application;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to apply for job"
+        error.response?.data?.message || "Failed to apply for job",
       );
     }
-  }
+  },
 );
 
 export const fetchAppliedJobs = createAsyncThunk(
@@ -89,11 +74,72 @@ export const fetchAppliedJobs = createAsyncThunk(
       return response.data.applications;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch applied jobs"
+        error.response?.data?.message || "Failed to fetch applied jobs",
       );
     }
-  }
+  },
 );
+
+export const searchJobs = createAsyncThunk(
+  "seekerJobs/searchJobs",
+  async (
+    { query, location, category, limit = 20, forSuggestions = false },
+    { rejectWithValue },
+  ) => {
+    try {
+      const params = new URLSearchParams();
+      if (query) params.append("q", query);
+      if (location) params.append("location", location);
+      if (category) params.append("category", category);
+      if (forSuggestions) params.append("limit", "5");
+      else params.append("limit", limit);
+
+      console.log("Searching with params:", params.toString());
+
+      const response = await API.get(`/jobs/search?${params.toString()}`);
+
+      console.log("Search response:", response.data);
+
+      // If it's for suggestions, return limited results with highlights
+      if (forSuggestions) {
+        return {
+          suggestions: response.data.jobs.map((job) => ({
+            ...job,
+            highlights: getSearchHighlights(job, query),
+          })),
+        };
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Search error:", error);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to search jobs",
+      );
+    }
+  },
+);
+
+// Helper function to get search highlights
+const getSearchHighlights = (job, query) => {
+  const lowerQuery = query.toLowerCase();
+  const highlights = [];
+
+  if (job.title.toLowerCase().includes(lowerQuery)) {
+    highlights.push("Matching title");
+  }
+  if (job.company.toLowerCase().includes(lowerQuery)) {
+    highlights.push("Matching company");
+  }
+  if (job.description?.overview?.toLowerCase().includes(lowerQuery)) {
+    highlights.push("Matching description");
+  }
+  if (job.tags?.some((tag) => tag.toLowerCase().includes(lowerQuery))) {
+    highlights.push("Matching skills");
+  }
+
+  return highlights.join(" • ");
+};
 
 const initialState = {
   jobs: [],
@@ -101,16 +147,17 @@ const initialState = {
   similarJobs: [],
   currentJob: null,
   appliedJobs: [],
+  searchSuggestions: [],
   pagination: {
     page: 1,
     limit: 10,
     total: 0,
-    pages: 0
+    pages: 0,
   },
   loading: false,
   error: null,
   searchLoading: false,
-  applyLoading: false
+  applyLoading: false,
 };
 
 const seekerJobSlice = createSlice({
@@ -126,9 +173,12 @@ const seekerJobSlice = createSlice({
     clearSimilarJobs: (state) => {
       state.similarJobs = [];
     },
+    clearSearchSuggestions: (state) => {
+      state.searchSuggestions = [];
+    },
     resetPagination: (state) => {
       state.pagination = initialState.pagination;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -154,11 +204,18 @@ const seekerJobSlice = createSlice({
       })
       .addCase(searchJobs.fulfilled, (state, action) => {
         state.searchLoading = false;
-        state.jobs = action.payload.jobs;
+        // Check if this is a suggestions response
+        if (action.payload.suggestions) {
+          state.searchSuggestions = action.payload.suggestions;
+        } else {
+          state.jobs = action.payload.jobs;
+          state.searchSuggestions = [];
+        }
       })
       .addCase(searchJobs.rejected, (state, action) => {
         state.searchLoading = false;
         state.error = action.payload;
+        state.searchSuggestions = [];
       })
 
       // Fetch Job Details
@@ -207,14 +264,15 @@ const seekerJobSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
-  }
+  },
 });
 
-export const { 
-  clearError, 
-  clearCurrentJob, 
-  clearSimilarJobs, 
-  resetPagination 
+export const {
+  clearError,
+  clearCurrentJob,
+  clearSimilarJobs,
+  resetPagination,
+  clearSearchSuggestions,
 } = seekerJobSlice.actions;
 
 export default seekerJobSlice.reducer;

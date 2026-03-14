@@ -14,8 +14,15 @@ import {
   Briefcase,
   ListChecksIcon,
   ChevronDownIcon,
+  MapPinIcon,
+  BuildingIcon,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  clearSearchSuggestions,
+  searchJobs,
+} from "../../store/slices/seekerJobSlice";
 
 export function Navbar({
   isSignedIn,
@@ -31,13 +38,33 @@ export function Navbar({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // search states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchFilters, setSearchFilters] = useState({
+    location: "",
+    category: "",
+  });
+  const [showFilters, setShowFilters] = useState(false);
+
   const dropdownRef = useRef(null);
   const adminMenuRef = useRef(null);
+  const searchRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
+
+  const { searchSuggestions, searchLoading } = useSelector(
+    (state) => state.seekerJobs,
+  );
 
   useEffect(() => {
     function handleClickOutside(event) {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+        setShowFilters(false);
+      }
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
@@ -56,6 +83,7 @@ export function Navbar({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileSearchOpen(false);
+    setShowSuggestions(false);
   }, [location]);
 
   const adminNavItems = [
@@ -86,6 +114,64 @@ export function Navbar({
     },
   ];
 
+  useEffect(() => {
+    if (!isAdminRoute && searchQuery.length >= 2) {
+      const timer = setTimeout(() => {
+        dispatch(
+          searchJobs({
+            query: searchQuery,
+            location: searchFilters.location,
+            category: searchFilters.category,
+            limit: 5,
+            forSuggestions: true,
+          }),
+        );
+        setShowSuggestions(true);
+      }, 300);
+
+      return () => clearTimeout(timer);
+    } else {
+      dispatch(clearSearchSuggestions());
+    }
+  }, [searchQuery, searchFilters, dispatch, isAdminRoute]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!isAdminRoute && searchQuery.trim()) {
+      setShowSuggestions(false);
+      // Navigate to jobs page with search params
+      const params = new URLSearchParams();
+      params.set("q", searchQuery);
+      if (searchFilters.location)
+        params.set("location", searchFilters.location);
+      if (searchFilters.category)
+        params.set("category", searchFilters.category);
+
+      navigate(`/jobs?${params.toString()}`);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    setSearchQuery(suggestion.title);
+    setShowSuggestions(false);
+
+    // Scroll to the job
+    const event = new CustomEvent("scrollToJob", {
+      detail: { jobId: suggestion._id },
+    });
+    window.dispatchEvent(event);
+  };
+
+  const handleFilterChange = (key, value) => {
+    setSearchFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchFilters({ location: "", category: "" });
+    setShowSuggestions(false);
+  };
+
   const handleAdminNavigation = (itemId) => {
     onAdminTabChange(itemId);
     setAdminMenuOpen(false);
@@ -112,22 +198,176 @@ export function Navbar({
             </div>
           </div>
 
-          {/* Center: Search - Hidden on mobile, visible on desktop */}
-          <div className="hidden md:block flex-1 max-w-2xl px-4 lg:px-12">
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+          {/* Center: Search with Suggestions - Hidden on mobile */}
+          <div
+            className="hidden md:block flex-1 max-w-2xl px-4 lg:px-12"
+            ref={searchRef}
+          >
+            <form onSubmit={handleSearch} className="relative">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <SearchIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                </div>
+
+                {/* Main Search Input */}
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() =>
+                    searchQuery.length >= 2 && setShowSuggestions(true)
+                  }
+                  className="block w-full pl-10 pr-24 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all duration-200"
+                  placeholder="Search jobs by title, skills, or company..."
+                />
+
+                {/* Filter Toggle Button */}
+                {/* <button
+                  type="button"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                    showFilters ||
+                    searchFilters.location ||
+                    searchFilters.category
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "text-slate-500 hover:bg-slate-100"
+                  }`}
+                >
+                  Filters
+                </button> */}
               </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all duration-200"
-                placeholder={
-                  isAdminRoute
-                    ? "Search candidates, jobs..."
-                    : "Search jobs, companies..."
-                }
-              />
-            </div>
+
+              {/* Filters Dropdown */}
+              {showFilters && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-slate-200 p-4 z-50">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Location
+                      </label>
+                      <div className="relative">
+                        <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                          type="text"
+                          value={searchFilters.location}
+                          onChange={(e) =>
+                            handleFilterChange("location", e.target.value)
+                          }
+                          placeholder="City, state, or remote"
+                          className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={searchFilters.category}
+                        onChange={(e) =>
+                          handleFilterChange("category", e.target.value)
+                        }
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">All Categories</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Design">Design</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Data">Data</option>
+                        <option value="Product">Product</option>
+                        <option value="Customer Support">
+                          Customer Support
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end mt-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchFilters({ location: "", category: "" });
+                        setShowFilters(false);
+                      }}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Search Suggestions */}
+              {showSuggestions &&
+                searchSuggestions &&
+                searchSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
+                    {searchSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion._id}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 group"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-1">
+                            <BuildingIcon className="w-4 h-4 text-slate-400 group-hover:text-indigo-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 group-hover:text-indigo-600">
+                              {suggestion.title}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {suggestion.company} • {suggestion.location}
+                            </p>
+                            {suggestion.highlights && (
+                              <p className="text-xs text-indigo-600 mt-1 line-clamp-1">
+                                {suggestion.highlights}
+                              </p>
+                            )}
+                          </div>
+                          {suggestion.matchScore && (
+                            <div className="flex-shrink-0">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {suggestion.matchScore}% Match
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+
+                    {/* View all results link */}
+                    <div className="p-2 bg-slate-50 border-t border-slate-200">
+                      <button
+                        onClick={handleSearch}
+                        className="w-full text-center text-sm text-indigo-600 hover:text-indigo-800 font-medium py-1"
+                      >
+                        View all results for "{searchQuery}"
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              {showSuggestions &&
+                searchSuggestions?.length === 0 &&
+                searchQuery.length >= 2 &&
+                !searchLoading && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-slate-200 p-4 text-center z-50">
+                    <p className="text-sm text-slate-500">
+                      No jobs found matching "{searchQuery}"
+                    </p>
+                  </div>
+                )}
+
+              {searchLoading && showSuggestions && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-slate-200 p-4 text-center z-50">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p className="text-sm text-slate-500">Searching...</p>
+                  </div>
+                </div>
+              )}
+            </form>
           </div>
 
           {/* Right: Actions */}
@@ -233,10 +473,13 @@ export function Navbar({
                     {adminNavItems.map((item) => {
                       const Icon = item.icon;
                       const isActive = adminActiveTab === item.id;
-                      
+
                       if (item.subItems) {
                         return (
-                          <div key={item.id} className="border-b border-slate-100 last:border-0">
+                          <div
+                            key={item.id}
+                            className="border-b border-slate-100 last:border-0"
+                          >
                             <div className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                               {item.label}
                             </div>
@@ -408,28 +651,97 @@ export function Navbar({
 
         {/* Mobile Search Bar */}
         {mobileSearchOpen && (
-          <div className="md:hidden py-3 border-t border-slate-200 animate-slideDown">
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon className="h-5 w-5 text-slate-400" />
+          <div
+            className="md:hidden py-3 border-t border-slate-200 animate-slideDown"
+            ref={searchRef}
+          >
+            <form onSubmit={handleSearch} className="space-y-3">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <SearchIcon className="h-5 w-5 text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all duration-200"
+                  placeholder="Search jobs..."
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    <XIcon className="h-5 w-5 text-slate-400 hover:text-slate-600" />
+                  </button>
+                )}
               </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all duration-200"
-                placeholder={
-                  isAdminRoute
-                    ? "Search candidates, jobs..."
-                    : "Search jobs, companies..."
-                }
-                autoFocus
-              />
+
+              {/* Mobile Filters */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="relative">
+                  <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchFilters.location}
+                    onChange={(e) =>
+                      handleFilterChange("location", e.target.value)
+                    }
+                    placeholder="Location"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <select
+                  value={searchFilters.category}
+                  onChange={(e) =>
+                    handleFilterChange("category", e.target.value)
+                  }
+                  className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Category</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Design">Design</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Sales">Sales</option>
+                  <option value="Data">Data</option>
+                  <option value="Product">Product</option>
+                </select>
+              </div>
+
               <button
-                onClick={() => setMobileSearchOpen(false)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                type="submit"
+                className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
               >
-                <XIcon className="h-5 w-5 text-slate-400 hover:text-slate-600" />
+                Search Jobs
               </button>
-            </div>
+
+              {/* Mobile Search Suggestions */}
+              {showSuggestions &&
+                searchSuggestions &&
+                searchSuggestions.length > 0 && (
+                  <div className="mt-2 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+                    {searchSuggestions.slice(0, 3).map((suggestion) => (
+                      <button
+                        key={suggestion._id}
+                        onClick={() => {
+                          handleSuggestionClick(suggestion);
+                          setMobileSearchOpen(false);
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
+                      >
+                        <p className="text-sm font-medium text-slate-900">
+                          {suggestion.title}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {suggestion.company}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+            </form>
           </div>
         )}
       </div>

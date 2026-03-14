@@ -1,4 +1,3 @@
-// repositories/JobRepository.js
 import { Job } from "../models/Job.js";
 
 export class JobRepository {
@@ -82,12 +81,16 @@ export class JobRepository {
     try {
       const { skip = 0, limit = 10, sort = { createdAt: -1 } } = options;
 
+      console.log("Repository Query:", JSON.stringify(query, null, 2));
+
       const jobs = await Job.find(query)
         .select("-createdBy -__v")
         .sort(sort)
         .skip(skip)
         .limit(limit)
         .lean();
+
+      console.log(`Found ${jobs.length} jobs matching query`);
 
       return jobs;
     } catch (error) {

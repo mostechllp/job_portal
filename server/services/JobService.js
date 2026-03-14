@@ -1,4 +1,3 @@
-// services/JobService.js
 import { jobRepository, profileRepository } from "../config/container.js";
 import { jobAlertTemplate } from "../templates/emailTemplate.js";
 import { sendEmail } from "./EmailService.js";
@@ -87,11 +86,15 @@ export class JobService {
         ...(job.tags || []),
         job.description?.overview || "",
         ...(job.description?.requirements || []),
-        ...(job.description?.responsibilities || [])
-      ].join(" ").toLowerCase();
+        ...(job.description?.responsibilities || []),
+      ]
+        .join(" ")
+        .toLowerCase();
 
-      const jobTags = [...(job.tags || []), ...(job.description?.requirements || [])]
-        .map(tag => tag.toLowerCase().trim());
+      const jobTags = [
+        ...(job.tags || []),
+        ...(job.description?.requirements || []),
+      ].map((tag) => tag.toLowerCase().trim());
 
       const jobTitleWords = job.title.toLowerCase().split(" ");
       const jobCategory = job.category.toLowerCase();
@@ -109,8 +112,10 @@ export class JobService {
 
         // Check skills match against job tags and requirements
         if (profile.skills && profile.skills.length > 0) {
-          const profileSkills = profile.skills.map(s => s.toLowerCase().trim());
-          
+          const profileSkills = profile.skills.map((s) =>
+            s.toLowerCase().trim(),
+          );
+
           const matchedSkills = [];
           for (const tag of jobTags) {
             for (const skill of profileSkills) {
@@ -131,7 +136,7 @@ export class JobService {
         // Check preferred roles match
         if (profile.jobPreferences?.preferredRoles?.length > 0) {
           const preferredRoles = profile.jobPreferences.preferredRoles.map(
-            r => r.toLowerCase().trim()
+            (r) => r.toLowerCase().trim(),
           );
 
           let roleMatched = false;
@@ -162,9 +167,10 @@ export class JobService {
 
         // Check location preference
         if (profile.jobPreferences?.preferredLocations?.length > 0) {
-          const preferredLocations = profile.jobPreferences.preferredLocations.map(
-            l => l.toLowerCase().trim()
-          );
+          const preferredLocations =
+            profile.jobPreferences.preferredLocations.map((l) =>
+              l.toLowerCase().trim(),
+            );
           const jobLocation = job.location.toLowerCase();
 
           let locationMatched = false;
@@ -226,8 +232,8 @@ export class JobService {
 
       if (matches.length > 0) {
         const topMatches = matches.slice(0, 50);
-        this.sendJobAlertsToMatches(job, topMatches).catch(err =>
-          console.error("Error sending job alerts:", err)
+        this.sendJobAlertsToMatches(job, topMatches).catch((err) =>
+          console.error("Error sending job alerts:", err),
         );
       }
 
@@ -254,7 +260,7 @@ export class JobService {
 
     const results = await Promise.allSettled(emailPromises);
     const successful = results.filter(
-      (r) => r.status === "fulfilled" && r.value
+      (r) => r.status === "fulfilled" && r.value,
     ).length;
 
     return { total: matches.length, successful };
@@ -322,7 +328,7 @@ export class JobService {
         salary: job.salary,
         location: job.location,
         workType: job.workType,
-        description: job.description, // Now returns the full description object
+        description: job.description, 
         tags: job.tags,
         isActive: job.isActive,
         createdAt: job.createdAt,
@@ -333,40 +339,99 @@ export class JobService {
     }
   }
 
-  async searchJobs(searchParams) {
-    try {
-      const { query, location, category } = searchParams;
+async searchJobs(searchParams) {
+  try {
+    const { query, location, category, limit = 50 } = searchParams;
 
-      const searchQuery = { isActive: true };
+    const searchQuery = { isActive: true };
 
-      if (query) {
-        searchQuery.$or = [
-          { title: { $regex: query, $options: "i" } },
-          { "description.overview": { $regex: query, $options: "i" } },
-          { "description.responsibilities": { $elemMatch: { $regex: query, $options: "i" } } },
-          { "description.requirements": { $elemMatch: { $regex: query, $options: "i" } } },
-          { tags: { $in: [new RegExp(query, "i")] } },
-        ];
-      }
-
-      if (location) {
-        searchQuery.location = { $regex: location, $options: "i" };
-      }
-
-      if (category) {
-        searchQuery.category = category;
-      }
-
-      const jobs = await jobRepository.findPublic(searchQuery, {
-        sort: { createdAt: -1 },
-        limit: 50,
-      });
-
-      return jobs;
-    } catch (error) {
-      throw new Error("Error searching jobs: " + error.message);
+    if (query) {
+      // Split the query into individual words for better matching
+      const searchTerms = query.split(' ').filter(term => term.length > 1);
+      
+      // Create a more precise search condition
+      searchQuery.$or = [
+        // Exact phrase matching (highest priority)
+        { title: { $regex: query, $options: "i" } },
+        { company: { $regex: query, $options: "i" } },
+        { "description.overview": { $regex: query, $options: "i" } },
+        
+        // Match individual words in title (for partial matches)
+        ...searchTerms.map(term => ({ title: { $regex: term, $options: "i" } })),
+        
+        // Match individual words in company name
+        ...searchTerms.map(term => ({ company: { $regex: term, $options: "i" } })),
+        
+        // Match tags/skills
+        { tags: { $in: searchTerms.map(term => new RegExp(term, "i")) } },
+        
+        // Match in requirements
+        { "description.requirements": { $elemMatch: { $regex: query, $options: "i" } } },
+        
+        // Match in responsibilities
+        { "description.responsibilities": { $elemMatch: { $regex: query, $options: "i" } } },
+      ];
     }
+
+    if (location) {
+      // Handle location search
+      const locationTerms = location.split(' ').filter(term => term.length > 1);
+      if (locationTerms.length > 0) {
+        searchQuery.location = {
+          $regex: locationTerms.join('|'),
+          $options: "i"
+        };
+      }
+    }
+
+    if (category) {
+      searchQuery.category = category;
+    }
+
+    console.log("Search Query:", JSON.stringify(searchQuery, null, 2));
+
+    const jobs = await jobRepository.findPublic(searchQuery, {
+      sort: { 
+        createdAt: -1,
+      },
+      limit: parseInt(limit),
+    });
+
+    // Add match scores for better UX
+    if (query) {
+      const lowerQuery = query.toLowerCase();
+      jobs.forEach(job => {
+        let score = 0;
+        const titleLower = job.title.toLowerCase();
+        const companyLower = job.company.toLowerCase();
+        const overviewLower = job.description?.overview?.toLowerCase() || '';
+        
+        // Exact match in title (highest score)
+        if (titleLower === lowerQuery) score += 100;
+        else if (titleLower.includes(lowerQuery)) score += 80;
+        
+        // Word-by-word matching
+        const queryWords = lowerQuery.split(' ');
+        queryWords.forEach(word => {
+          if (titleLower.includes(word)) score += 30;
+          if (companyLower.includes(word)) score += 20;
+          if (job.tags?.some(tag => tag.toLowerCase().includes(word))) score += 25;
+          if (overviewLower.includes(word)) score += 15;
+        });
+        
+        job.matchScore = Math.min(score, 100);
+      });
+      
+      // Sort by match score
+      jobs.sort((a, b) => b.matchScore - a.matchScore);
+    }
+
+    return jobs;
+  } catch (error) {
+    console.error("Error in searchJobs service:", error);
+    throw new Error("Error searching jobs: " + error.message);
   }
+}
 
   async getSimilarJobs(jobId, limit = 5) {
     try {
@@ -383,13 +448,17 @@ export class JobService {
           $or: [
             { category: job.category },
             { tags: { $in: job.tags } },
-            { "description.requirements": { $in: job.description?.requirements || [] } }
+            {
+              "description.requirements": {
+                $in: job.description?.requirements || [],
+              },
+            },
           ],
         },
         {
           limit,
           sort: { createdAt: -1 },
-        }
+        },
       );
 
       return similarJobs;

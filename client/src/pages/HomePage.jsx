@@ -31,8 +31,7 @@ export function HomePage() {
   const [showProfile, setShowProfile] = useState(false);
   const [applyModalJob, setApplyModalJob] = useState(null);
 
-  const [showForgotPasswordModal, setShowForgotPasswordModal] =
-    useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
   const isSignedIn = !!user;
 
@@ -63,7 +62,7 @@ export function HomePage() {
     }
 
     const alreadyApplied = appliedJobs.some(
-      (app) => app.jobTitle === job.title && app.company === job.company
+      (app) => app.jobTitle === job.title && app.company === job.company,
     );
 
     if (alreadyApplied) return;
@@ -104,7 +103,7 @@ export function HomePage() {
               onQuickApply={handleQuickApplyClick}
             />
 
-            <ApplicationsTable applications={appliedJobs} />
+            {user && <ApplicationsTable applications={appliedJobs} />}
           </div>
         </div>
       </main>
@@ -126,10 +125,7 @@ export function HomePage() {
         onQuickApply={handleQuickApplyClick}
       />
 
-      <ApplyModal
-        job={applyModalJob}
-        onClose={() => setApplyModalJob(null)}
-      />
+      <ApplyModal job={applyModalJob} onClose={() => setApplyModalJob(null)} />
 
       <ProfilePanel
         isOpen={showProfile}
