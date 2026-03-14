@@ -1,19 +1,22 @@
-import { useAuthInit } from "./hooks/useAuthInit";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { HomePage } from "./pages/HomePage";
+import { loadUser, setInitialized } from "./store/slices/authSlice";
 
 export function App() {
-  const { token, isInitialized } = useAuthInit();
+  const dispatch = useDispatch();
+  const { token, user, isInitialized } = useSelector((state) => state.auth);
 
-  if (token && !isInitialized) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading application...</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    // If we have a token but no user data, load the user
+    if (token && !user) {
+      dispatch(loadUser());
+    }
+    // If we have no token, mark as initialized
+    else if (!token && !isInitialized) {
+      dispatch(setInitialized());
+    }
+  }, [dispatch, token, user, isInitialized]);
 
   return <HomePage />;
 }

@@ -4,10 +4,10 @@ import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 
 export function AdminDashboardPage() {
-  const { user, loading, isInitialized } = useSelector((state) => state.auth);
+  const { user, loading, isInitialized, token } = useSelector((state) => state.auth);
 
   // Show loading while checking authentication
-  if (loading || !isInitialized) {
+  if (!isInitialized || (token && loading)) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">

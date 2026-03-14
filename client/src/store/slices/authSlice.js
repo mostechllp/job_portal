@@ -7,8 +7,7 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await API.post("/auth/login", credentials);
-      localStorage.setItem("token", response.data.token);
-      return response.data;
+      return response.data; 
     } catch (error) {
       const message = error.response?.data?.message || "Login failed";
       return rejectWithValue(message);
@@ -16,15 +15,18 @@ export const loginUser = createAsyncThunk(
   },
 );
 
-// thung to load user data on refresh
+// thunk to load user data on refresh
 export const loadUser = createAsyncThunk(
   "auth/loadUser",
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
+      const { token } = getState().auth;
+      if (!token) {
+        return rejectWithValue("No token found");
+      }
       const response = await API.get("/auth/me");
       return response.data;
     } catch (error) {
-      localStorage.removeItem("token"); 
       return rejectWithValue(
         error.response?.data?.message || "failed loading user",
       );
@@ -51,10 +53,6 @@ export const verifyOTP = createAsyncThunk(
   async ({ email, otp }, { rejectWithValue }) => {
     try {
       const response = await API.post("/auth/verify-otp", { email, otp });
-      // If verification returns token, store it
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-      }
       return response.data;
     } catch (err) {
       return rejectWithValue(
@@ -125,8 +123,6 @@ export const adminLogin = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await API.post("/auth/admin-login", credentials);
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("adminToken", response.data.token); 
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || "Admin login failed";
@@ -139,22 +135,33 @@ const authSlice = createSlice({
   name: "auth",
   initialState: {
     user: null,
-    token: localStorage.getItem("token") || null,
+    token: null,
     loading: false,
     isInitialized: false,
     error: null,
   },
   reducers: {
     signOut: (state) => {
-      localStorage.removeItem("token");
       state.user = null;
       state.token = null;
+      state.isInitialized = true;
     },
     updateUserProfileImage: (state, action) => {
-    if (state.user) {
-      state.user.profileImg = action.payload;
-    }
-  },
+      if (state.user) {
+        state.user.profileImg = action.payload;
+      }
+    },
+    setInitialized: (state) => {
+      state.isInitialized = true;
+    },
+    rehydrate: (state, action) => {
+      // This will be called when redux-persist restores the state
+      if (action.payload) {
+        state.user = action.payload.user || null;
+        state.token = action.payload.token || null;
+      }
+      state.isInitialized = true;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -167,11 +174,13 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.isInitialized = true;
         state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.isInitialized = true;
       })
 
       // Load User
@@ -185,9 +194,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loadUser.rejected, (state, action) => {
-        state.user = null;
         state.loading = false;
-        state.token = null;
         state.isInitialized = true;
         state.error = action.payload;
       })
@@ -199,10 +206,12 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = action.payload;
       })
 
@@ -213,18 +222,18 @@ const authSlice = createSlice({
       })
       .addCase(verifyOTP.fulfilled, (state, action) => {
         state.loading = false;
-        // If OTP verification returns token/user, store them
         if (action.payload.token) {
           state.token = action.payload.token;
-          localStorage.setItem("token", action.payload.token);
         }
         if (action.payload.user) {
           state.user = action.payload.user;
         }
+        state.isInitialized = true;
         state.error = null;
       })
       .addCase(verifyOTP.rejected, (state, action) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = action.payload;
       })
 
@@ -235,12 +244,15 @@ const authSlice = createSlice({
       })
       .addCase(resendOTP.fulfilled, (state) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = null;
       })
       .addCase(resendOTP.rejected, (state, action) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = action.payload;
       })
+      
       // Forgot Password
       .addCase(forgotPassword.pending, (state) => {
         state.loading = true;
@@ -248,10 +260,12 @@ const authSlice = createSlice({
       })
       .addCase(forgotPassword.fulfilled, (state) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = null;
       })
       .addCase(forgotPassword.rejected, (state, action) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = action.payload;
       })
 
@@ -262,10 +276,12 @@ const authSlice = createSlice({
       })
       .addCase(verifyResetOTP.fulfilled, (state) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = null;
       })
       .addCase(verifyResetOTP.rejected, (state, action) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = action.payload;
       })
 
@@ -276,12 +292,15 @@ const authSlice = createSlice({
       })
       .addCase(resetPassword.fulfilled, (state) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = null;
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.loading = false;
+        state.isInitialized = true;
         state.error = action.payload;
       })
+      
       // admin login
       .addCase(adminLogin.pending, (state) => {
         state.loading = true;
@@ -302,5 +321,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { signOut, updateUserProfileImage } = authSlice.actions;
+export const { signOut, updateUserProfileImage, setInitialized, rehydrate } = authSlice.actions;
 export default authSlice.reducer;
