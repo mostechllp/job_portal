@@ -60,27 +60,41 @@ export function JobDetailModal({
     return colors[hash % colors.length];
   };
 
-  // Format posted date safely
-  const formatPostedDate = (dateString) => {
-    if (!dateString) return 'Recently';
+// Format posted date safely
+const formatPostedDate = (dateString) => {
+  if (!dateString) return 'Recently';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Recently';
     
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Recently';
-      
-      const now = new Date();
-      const diffTime = Math.abs(now - date);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return 'Yesterday';
-      if (diffDays < 7) return `${diffDays} days ago`;
-      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch {
-      return 'Recently';
+    const now = new Date();
+    const diffTime = now - date; // Difference in milliseconds
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffHours < 1) {
+      return 'Just now';
+    } else if (diffHours < 24) {
+      return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
     }
-  };
+  } catch {
+    return 'Recently';
+  }
+};
 
   // Format work type for display
   const formatWorkType = (type) => {

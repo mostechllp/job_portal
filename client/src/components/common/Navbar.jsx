@@ -30,11 +30,9 @@ export function Navbar({
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-  const [jobsMenuOpen, setJobsMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const dropdownRef = useRef(null);
   const adminMenuRef = useRef(null);
-  const jobsMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,12 +46,6 @@ export function Navbar({
         !adminMenuRef.current.contains(event.target)
       ) {
         setAdminMenuOpen(false);
-      }
-      if (
-        jobsMenuRef.current &&
-        !jobsMenuRef.current.contains(event.target)
-      ) {
-        setJobsMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -81,23 +73,6 @@ export function Navbar({
       id: "manage-jobs",
       label: "Manage Jobs",
       icon: Briefcase,
-      subItems: [
-        {
-          id: "all-jobs",
-          label: "All Jobs",
-          icon: ListChecksIcon,
-        },
-        {
-          id: "active-jobs",
-          label: "Active Jobs",
-          icon: Briefcase,
-        },
-        {
-          id: "closed-jobs",
-          label: "Closed Jobs",
-          icon: XIcon,
-        },
-      ],
     },
     {
       id: "candidates",
@@ -114,7 +89,6 @@ export function Navbar({
   const handleAdminNavigation = (itemId) => {
     onAdminTabChange(itemId);
     setAdminMenuOpen(false);
-    setJobsMenuOpen(false);
   };
 
   return (
@@ -193,60 +167,16 @@ export function Navbar({
                 >
                   Post a Job
                 </button>
-
-                {/* Manage Jobs Dropdown */}
-                <div className="relative" ref={jobsMenuRef}>
-                  <button
-                    onClick={() => setJobsMenuOpen(!jobsMenuOpen)}
-                    className={`flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      ["all-jobs", "active-jobs", "closed-jobs"].includes(adminActiveTab)
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    <Briefcase className="w-4 h-4" />
-                    Manage Jobs
-                    <ChevronDownIcon className={`w-4 h-4 transition-transform ${jobsMenuOpen ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {jobsMenuOpen && (
-                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
-                      <button
-                        onClick={() => handleAdminNavigation("all-jobs")}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                          adminActiveTab === "all-jobs"
-                            ? "bg-indigo-50 text-indigo-700 font-medium"
-                            : "text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        <ListChecksIcon className="w-4 h-4" />
-                        All Jobs
-                      </button>
-                      <button
-                        onClick={() => handleAdminNavigation("active-jobs")}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                          adminActiveTab === "active-jobs"
-                            ? "bg-indigo-50 text-indigo-700 font-medium"
-                            : "text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        <Briefcase className="w-4 h-4" />
-                        Active Jobs
-                      </button>
-                      <button
-                        onClick={() => handleAdminNavigation("closed-jobs")}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                          adminActiveTab === "closed-jobs"
-                            ? "bg-indigo-50 text-indigo-700 font-medium"
-                            : "text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        <XIcon className="w-4 h-4" />
-                        Closed Jobs
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => handleAdminNavigation("manage-jobs")}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    adminActiveTab === "manage-jobs"
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  Manage Jobs
+                </button>
 
                 {/* Candidates */}
                 <button

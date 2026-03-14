@@ -1,13 +1,7 @@
 import React from "react";
 import { Trash2Icon, UsersIcon, PencilIcon, Loader2 } from "lucide-react";
 
-export function JobManager({
-  jobs,
-  onToggleJob,
-  onDeleteJob,
-  onEditJob,
-  isLoading,
-}) {
+export function JobManager({ jobs, onDeleteJob, onEditJob, isLoading }) {
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 flex justify-center">
@@ -80,31 +74,6 @@ export function JobManager({
               <div className="w-px h-8 bg-slate-200 hidden sm:block"></div>
 
               <div className="flex items-center gap-4">
-                <label className="flex items-center cursor-pointer">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      className="sr-only"
-                      checked={job.isActive}
-                      onChange={() => onToggleJob(job._id)}
-                    />
-
-                    <div
-                      className={`block w-10 h-6 rounded-full transition-colors ${
-                        job.isActive ? "bg-indigo-600" : "bg-slate-300"
-                      }`}
-                    ></div>
-                    <div
-                      className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                        job.isActive ? "transform translate-x-4" : ""
-                      }`}
-                    ></div>
-                  </div>
-                  <span className="ml-3 text-sm font-medium text-slate-700 w-12">
-                    {job.isActive ? "Open" : "Close"}
-                  </span>
-                </label>
-
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => onEditJob(job)}

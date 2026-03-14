@@ -184,13 +184,7 @@ export function AdminPortal({ onSwitchToSeeker }) {
     ) {
       const filteredJobs = getFilteredJobs();
       const tabTitle =
-        activeTab === "all-jobs"
-          ? "All Jobs"
-          : activeTab === "active-jobs"
-            ? "Active Jobs"
-            : activeTab === "closed-jobs"
-              ? "Closed Jobs"
-              : "Manage Jobs";
+        activeTab === "All Jobs"
 
       return (
         <div className="space-y-6">
@@ -311,12 +305,6 @@ export function AdminPortal({ onSwitchToSeeker }) {
                               {job.applicantCount || 0} applicants
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleToggleJob(job._id)}
-                            className="text-xs font-medium text-indigo-600 hover:text-indigo-800 self-end sm:self-auto px-3 py-1.5 sm:px-0 sm:py-0"
-                          >
-                            Close
-                          </button>
                         </div>
                       ))
                   )}
