@@ -1,4 +1,6 @@
+// controllers/JobController.js
 import { jobService } from "../config/container.js";
+
 export class JobController {
   getAllJobs = async (req, res, next) => {
     try {
@@ -41,6 +43,15 @@ export class JobController {
     try {
       const jobData = req.body;
       const userId = req.user._id;
+
+      // Validate the structured description
+      if (!jobData.description?.overview || 
+          !jobData.description?.responsibilities?.length || 
+          !jobData.description?.requirements?.length) {
+        return res.status(400).json({
+          message: "Job description must include overview, responsibilities, and requirements"
+        });
+      }
 
       const newJob = await jobService.createJobWithAlerts(jobData, userId);
 

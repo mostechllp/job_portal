@@ -38,7 +38,7 @@ export class ProfileRepository {
         jobPreferences: {
           preferredRoles: [],
           expectedSalary: { min: 0, max: 0, currency: "INR" },
-          workType: "any",
+          workType: "full-time",
           preferredLocations: [],
         },
         phone: "",

@@ -1,8 +1,8 @@
+// controllers/PublicJobController.js
 import { jobService } from "../config/container.js";
 
 export class PublicJobController {
   getPublicJobs = async (req, res, next) => {
-
     try {
       const { page = 1, limit = 10, category, location, type } = req.query;
 
@@ -14,10 +14,9 @@ export class PublicJobController {
         type,
       });
 
-      // Send the response in the format the frontend expects
       res.status(200).json({
         message: "Jobs fetched successfully",
-        jobs: result.data, 
+        jobs: result.data,
         pagination: result.pagination,
       });
     } catch (error) {
@@ -25,6 +24,7 @@ export class PublicJobController {
       next(error);
     }
   };
+
   searchJobs = async (req, res, next) => {
     try {
       const { query, location, category } = req.query;
@@ -43,7 +43,6 @@ export class PublicJobController {
     try {
       const { id } = req.params;
 
-      // Validate if id is a valid ObjectId
       if (!id.match(/^[0-9a-fA-F]{24}$/)) {
         return res.status(400).json({
           message: "Invalid job ID format",
@@ -72,7 +71,6 @@ export class PublicJobController {
       const { id } = req.params;
       const { limit = 5 } = req.query;
 
-      // Validate if id is a valid ObjectId
       if (!id.match(/^[0-9a-fA-F]{24}$/)) {
         return res.status(400).json({
           message: "Invalid job ID format",

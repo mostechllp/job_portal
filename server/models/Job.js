@@ -1,4 +1,30 @@
+// models/Job.js
 import mongoose, { Schema } from "mongoose";
+
+const JobDescriptionSchema = new Schema({
+  overview: {
+    type: String,
+    required: true,
+  },
+  responsibilities: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
+  requirements: [
+    {
+      type: String,
+      required: true,
+    },
+  ],
+  benefits: [
+    {
+      type: String,
+      default: [],
+    },
+  ],
+});
 
 const JobSchema = new Schema(
   {
@@ -15,7 +41,16 @@ const JobSchema = new Schema(
     category: {
       type: String,
       required: true,
-      enum: ["Engineering", "Design", "Marketing", "Sales", "Data", "Other"],
+      enum: [
+        "Engineering",
+        "Design",
+        "Marketing",
+        "Sales",
+        "Data",
+        "Product",
+        "Customer Support",
+        "Other",
+      ],
     },
     salary: {
       type: String,
@@ -26,7 +61,7 @@ const JobSchema = new Schema(
       required: true,
     },
     description: {
-      type: String,
+      type: JobDescriptionSchema,
       required: true,
     },
     tags: [
@@ -50,8 +85,15 @@ const JobSchema = new Schema(
     },
     workType: {
       type: String,
-      enum: ["remote", "hybrid", "on-site", "any"],
-      default: "any",
+      enum: [
+        "full-time",
+        "part-time",
+        "contract",
+        "internship",
+        "temporary",
+        "freelance",
+      ],
+      required: true,
     },
   },
   {

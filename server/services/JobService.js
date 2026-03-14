@@ -1,3 +1,4 @@
+// services/JobService.js
 import { jobRepository, profileRepository } from "../config/container.js";
 import { jobAlertTemplate } from "../templates/emailTemplate.js";
 import { sendEmail } from "./EmailService.js";
@@ -49,7 +50,6 @@ export class JobService {
       throw new Error("Job not found");
     }
 
-    // Check if user is authorized to delete this job
     if (job.createdBy.toString() !== userId.toString()) {
       throw new Error("Unauthorized to delete this job");
     }
@@ -63,7 +63,6 @@ export class JobService {
       throw new Error("Job not found");
     }
 
-    // Check if user is authorized to toggle this job
     if (job.createdBy.toString() !== userId.toString()) {
       throw new Error("Unauthorized to modify this job");
     }
@@ -81,18 +80,26 @@ export class JobService {
 
   async findMatchingCandidates(job) {
     try {
-      // Normalize job tags to lowercase for comparison
-      const jobTags = job.tags.map((tag) => tag.toLowerCase().trim());
+      // Extract all text content from job description for matching
+      const jobText = [
+        job.title,
+        job.category,
+        ...(job.tags || []),
+        job.description?.overview || "",
+        ...(job.description?.requirements || []),
+        ...(job.description?.responsibilities || [])
+      ].join(" ").toLowerCase();
+
+      const jobTags = [...(job.tags || []), ...(job.description?.requirements || [])]
+        .map(tag => tag.toLowerCase().trim());
+
       const jobTitleWords = job.title.toLowerCase().split(" ");
       const jobCategory = job.category.toLowerCase();
 
-      // Find all seeker profiles
       const profiles = await profileRepository.find();
-
       const matches = [];
 
       for (const profile of profiles) {
-        // Skip if no user or user is admin
         if (!profile.user || profile.user.role !== "seeker") {
           continue;
         }
@@ -100,17 +107,13 @@ export class JobService {
         let matchScore = 0;
         const matchReasons = [];
 
-        // Check skills match (CASE INSENSITIVE)
+        // Check skills match against job tags and requirements
         if (profile.skills && profile.skills.length > 0) {
-          const profileSkills = profile.skills.map((s) =>
-            s.toLowerCase().trim(),
-          );
-
-          // Check each job tag against profile skills
+          const profileSkills = profile.skills.map(s => s.toLowerCase().trim());
+          
           const matchedSkills = [];
           for (const tag of jobTags) {
             for (const skill of profileSkills) {
-              // Check if tag is included in skill OR skill is included in tag
               if (skill.includes(tag) || tag.includes(skill)) {
                 matchedSkills.push(tag);
                 break;
@@ -119,9 +122,8 @@ export class JobService {
           }
 
           if (matchedSkills.length > 0) {
-            // Remove duplicates
             const uniqueMatches = [...new Set(matchedSkills)];
-            matchScore += uniqueMatches.length * 20; // 20 points per matching skill
+            matchScore += uniqueMatches.length * 20;
             matchReasons.push(`Skills match: ${uniqueMatches.join(", ")}`);
           }
         }
@@ -129,10 +131,9 @@ export class JobService {
         // Check preferred roles match
         if (profile.jobPreferences?.preferredRoles?.length > 0) {
           const preferredRoles = profile.jobPreferences.preferredRoles.map(
-            (r) => r.toLowerCase().trim(),
+            r => r.toLowerCase().trim()
           );
 
-          // Check job title against preferred roles
           let roleMatched = false;
           for (const role of preferredRoles) {
             for (const word of jobTitleWords) {
@@ -144,7 +145,6 @@ export class JobService {
             if (roleMatched) break;
           }
 
-          // Also check job category against preferred roles
           if (!roleMatched) {
             for (const role of preferredRoles) {
               if (role.includes(jobCategory) || jobCategory.includes(role)) {
@@ -162,10 +162,9 @@ export class JobService {
 
         // Check location preference
         if (profile.jobPreferences?.preferredLocations?.length > 0) {
-          const preferredLocations =
-            profile.jobPreferences.preferredLocations.map((l) =>
-              l.toLowerCase().trim(),
-            );
+          const preferredLocations = profile.jobPreferences.preferredLocations.map(
+            l => l.toLowerCase().trim()
+          );
           const jobLocation = job.location.toLowerCase();
 
           let locationMatched = false;
@@ -186,7 +185,6 @@ export class JobService {
           }
         }
 
-        // Add to matches if score > 0
         if (matchScore > 0) {
           matches.push({
             user: {
@@ -199,7 +197,7 @@ export class JobService {
               skills: profile.skills || [],
               jobPreferences: profile.jobPreferences,
             },
-            matchScore: Math.min(matchScore, 100), // Cap at 100
+            matchScore: Math.min(matchScore, 100),
             matchReasons,
             skills: profile.skills || [],
             preferredRoles: profile.jobPreferences?.preferredRoles || [],
@@ -207,10 +205,7 @@ export class JobService {
         }
       }
 
-      // Sort by match score descending
-      const sortedMatches = matches.sort((a, b) => b.matchScore - a.matchScore);
-
-      return sortedMatches;
+      return matches.sort((a, b) => b.matchScore - a.matchScore);
     } catch (error) {
       console.error("Error in findMatchingCandidates:", error);
       throw new Error("Error finding matching candidates: " + error.message);
@@ -219,7 +214,6 @@ export class JobService {
 
   async createJobWithAlerts(jobData, userId) {
     try {
-      // Create the job
       const newJob = {
         ...jobData,
         createdBy: userId,
@@ -228,21 +222,15 @@ export class JobService {
       };
 
       const job = await jobRepository.create(newJob);
-
-      // Find matching candidates
       const matches = await this.findMatchingCandidates(job);
 
-      // Send email alerts to top matches
       if (matches.length > 0) {
         const topMatches = matches.slice(0, 50);
-
-        // Don't await - send in background
-        this.sendJobAlertsToMatches(job, topMatches).catch((err) =>
-          console.error("Error sending job alerts:", err),
+        this.sendJobAlertsToMatches(job, topMatches).catch(err =>
+          console.error("Error sending job alerts:", err)
         );
       }
 
-      // Return job with matches
       return {
         ...job.toObject(),
         matches,
@@ -252,11 +240,12 @@ export class JobService {
       throw new Error("Error creating job with alerts: " + error.message);
     }
   }
+
   async sendJobAlertsToMatches(job, matches) {
     const emailPromises = matches.map((match) => {
       const template = jobAlertTemplate(match.user, job);
       return sendEmail({
-        to: match.user,
+        to: match.user.email,
         subject: template.subject,
         html: template.html,
         text: template.text,
@@ -265,7 +254,7 @@ export class JobService {
 
     const results = await Promise.allSettled(emailPromises);
     const successful = results.filter(
-      (r) => r.status === "fulfilled" && r.value,
+      (r) => r.status === "fulfilled" && r.value
     ).length;
 
     return { total: matches.length, successful };
@@ -276,7 +265,6 @@ export class JobService {
       const { page = 1, limit = 10, category, location, type } = filters;
       const skip = (page - 1) * limit;
 
-      // Build query - only include active jobs
       const query = { isActive: true };
 
       if (category) {
@@ -291,10 +279,7 @@ export class JobService {
         query.workType = type;
       }
 
-      // Get total count for pagination
       const total = await jobRepository.countDocuments(query);
-
-      // Get jobs with pagination
       const jobs = await jobRepository.findPublic(query, {
         skip,
         limit,
@@ -328,7 +313,7 @@ export class JobService {
         throw new Error("Job is no longer active");
       }
 
-      // Don't return sensitive information
+      // Return all job data including the structured description
       return {
         _id: job._id,
         title: job.title,
@@ -336,7 +321,8 @@ export class JobService {
         category: job.category,
         salary: job.salary,
         location: job.location,
-        description: job.description,
+        workType: job.workType,
+        description: job.description, // Now returns the full description object
         tags: job.tags,
         isActive: job.isActive,
         createdAt: job.createdAt,
@@ -356,7 +342,9 @@ export class JobService {
       if (query) {
         searchQuery.$or = [
           { title: { $regex: query, $options: "i" } },
-          { description: { $regex: query, $options: "i" } },
+          { "description.overview": { $regex: query, $options: "i" } },
+          { "description.responsibilities": { $elemMatch: { $regex: query, $options: "i" } } },
+          { "description.requirements": { $elemMatch: { $regex: query, $options: "i" } } },
           { tags: { $in: [new RegExp(query, "i")] } },
         ];
       }
@@ -388,17 +376,20 @@ export class JobService {
         throw new Error("Job not found");
       }
 
-      // Find similar jobs based on tags and category
       const similarJobs = await jobRepository.findPublic(
         {
           _id: { $ne: jobId },
           isActive: true,
-          $or: [{ category: job.category }, { tags: { $in: job.tags } }],
+          $or: [
+            { category: job.category },
+            { tags: { $in: job.tags } },
+            { "description.requirements": { $in: job.description?.requirements || [] } }
+          ],
         },
         {
           limit,
           sort: { createdAt: -1 },
-        },
+        }
       );
 
       return similarJobs;

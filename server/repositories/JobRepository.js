@@ -1,3 +1,4 @@
+// repositories/JobRepository.js
 import { Job } from "../models/Job.js";
 
 export class JobRepository {
@@ -38,7 +39,7 @@ export class JobRepository {
       return await Job.findByIdAndUpdate(
         id,
         { $set: updateData },
-        { returnDocument: "after", runValidators: true },
+        { returnDocument: "after", runValidators: true, new: true },
       );
     } catch (error) {
       throw new Error("Error updating job: " + error.message);
@@ -58,7 +59,7 @@ export class JobRepository {
       return await Job.findByIdAndUpdate(
         id,
         { $set: { isActive } },
-        { returnDocument: "after" },
+        { returnDocument: "after", new: true },
       );
     } catch (error) {
       throw new Error("Error toggling job status: " + error.message);
@@ -70,7 +71,7 @@ export class JobRepository {
       return await Job.findByIdAndUpdate(
         id,
         { $inc: { applicantCount: 1 } },
-        { returnDocument: "after" },
+        { returnDocument: "after", new: true },
       );
     } catch (error) {
       throw new Error("Error incrementing applicant count: " + error.message);
@@ -82,7 +83,7 @@ export class JobRepository {
       const { skip = 0, limit = 10, sort = { createdAt: -1 } } = options;
 
       const jobs = await Job.find(query)
-        .select("-createdBy -__v") // Exclude sensitive fields
+        .select("-createdBy -__v")
         .sort(sort)
         .skip(skip)
         .limit(limit)

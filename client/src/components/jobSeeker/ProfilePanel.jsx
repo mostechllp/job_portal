@@ -97,7 +97,7 @@ export function ProfilePanel({ isOpen, onClose }) {
     jobPreferences: {
       preferredRoles: [],
       expectedSalary: { min: "", max: "", currency: "INR" },
-      workType: "any",
+      workType: "full-time",
       preferredLocations: [],
       noticePeriod: null,
     },
@@ -136,7 +136,7 @@ export function ProfilePanel({ isOpen, onClose }) {
             max: profile.jobPreferences?.expectedSalary?.max || "",
             currency: profile.jobPreferences?.expectedSalary?.currency || "INR",
           },
-          workType: profile.jobPreferences?.workType || "any",
+          workType: profile.jobPreferences?.workType || "full-time",
           preferredLocations: profile.jobPreferences?.preferredLocations || [],
           noticePeriod: profile.jobPreferences?.noticePeriod || null,
         },
@@ -339,7 +339,7 @@ export function ProfilePanel({ isOpen, onClose }) {
       jobPreferences: {
         preferredRoles: [],
         expectedSalary: { min: "", max: "", currency: "INR" },
-        workType: "any",
+        workType: "full-time",
         preferredLocations: [],
         noticePeriod: null,
       },

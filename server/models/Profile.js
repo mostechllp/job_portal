@@ -23,30 +23,36 @@ const ProfileSchema = new Schema(
       default: "",
     },
     // Professional Information
-    skills: [{
-      type: String,
-      trim: true,
-    }],
-    experience: [{
-      title: String,
-      company: String,
-      location: String,
-      startDate: Date,
-      endDate: Date,
-      current: {
-        type: Boolean,
-        default: false,
+    skills: [
+      {
+        type: String,
+        trim: true,
       },
-      description: String,
-    }],
-    education: [{
-      degree: String,
-      institution: String,
-      location: String,
-      startDate: Date,
-      endDate: Date,
-      description: String,
-    }],
+    ],
+    experience: [
+      {
+        title: String,
+        company: String,
+        location: String,
+        startDate: Date,
+        endDate: Date,
+        current: {
+          type: Boolean,
+          default: false,
+        },
+        description: String,
+      },
+    ],
+    education: [
+      {
+        degree: String,
+        institution: String,
+        location: String,
+        startDate: Date,
+        endDate: Date,
+        description: String,
+      },
+    ],
     // Resume
     resume: {
       url: { type: String, default: null },
@@ -67,7 +73,14 @@ const ProfileSchema = new Schema(
       },
       workType: {
         type: String,
-        enum: ["remote", "hybrid", "on-site", "any"],
+        enum: [
+          "full-time",
+          "part-time",
+          "contract",
+          "internship",
+          "temporary",
+          "freelance",
+        ],
         default: "any",
       },
       preferredLocations: [String],
@@ -85,21 +98,23 @@ const ProfileSchema = new Schema(
       twitter: { type: String, default: "" },
     },
     // Additional Info
-    languages: [{
-      name: String,
-      proficiency: {
-        type: String,
-        enum: ["basic", "conversational", "professional", "native"],
+    languages: [
+      {
+        name: String,
+        proficiency: {
+          type: String,
+          enum: ["basic", "conversational", "professional", "native"],
+        },
       },
-    }],
+    ],
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Ensure virtuals are included in JSON output
-ProfileSchema.set('toJSON', { virtuals: true });
-ProfileSchema.set('toObject', { virtuals: true });
+ProfileSchema.set("toJSON", { virtuals: true });
+ProfileSchema.set("toObject", { virtuals: true });
 
 export const Profile = mongoose.model("Profile", ProfileSchema);
