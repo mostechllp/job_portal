@@ -14,6 +14,7 @@ import { ForgotPasswordModal } from "../components/common/ForgotPasswordModal";
 
 import { useDispatch, useSelector } from "react-redux";
 import { loadUser, signOut } from "../store/slices/authSlice";
+import BannerCarousel from "../components/common/BannerCorousel";
 
 export function HomePage() {
   const { user, token, loading } = useSelector((state) => state.auth);
@@ -81,6 +82,8 @@ export function HomePage() {
         onMobileMenuClick={() => setMobileDrawerOpen(true)}
         savedJobsCount={savedJobs.length}
       />
+
+      <BannerCarousel />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
