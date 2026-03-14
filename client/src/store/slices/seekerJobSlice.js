@@ -12,7 +12,6 @@ export const fetchJobs = createAsyncThunk(
       
       const queryParams = new URLSearchParams(cleanParams).toString();
       const response = await API.get(`/jobs?${queryParams}`);
-      console.log("Job response: ", response.data)
       return response.data;
     } catch (error) {
       return rejectWithValue(

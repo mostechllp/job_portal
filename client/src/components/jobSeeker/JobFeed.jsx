@@ -49,6 +49,11 @@ export function JobFeed({
     }
   };
 
+  const handleJobClick = (job) => {
+  const originalJob = jobs.find(j => (j._id || j.id) === (job._id || job.id));
+  onJobClick(originalJob || job);
+};
+
   if (loading && jobs.length === 0 && page === 1) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -161,7 +166,7 @@ export function JobFeed({
                   : job.postedDate || 'Recently',
                 isActive: job.isActive,
               }}
-              onJobClick={onJobClick}
+              onJobClick={() => handleJobClick(job)}
               onQuickApply={onQuickApply}
               isApplied={isApplied}
             />
