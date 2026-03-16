@@ -5,7 +5,7 @@ import { loadUser, setInitialized } from "./store/slices/authSlice";
 
 export function App() {
   const dispatch = useDispatch();
-  const { token, user, isInitialized } = useSelector((state) => state.auth);
+  const { token, user, isInitialized } = useSelector((state) => state.auth);;
 
   useEffect(() => {
     

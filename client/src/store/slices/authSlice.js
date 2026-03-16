@@ -7,6 +7,12 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await API.post("/auth/login", credentials);
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      }
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || "Login failed";
@@ -131,24 +137,51 @@ export const adminLogin = createAsyncThunk(
   },
 );
 
+const initialState = {
+  user: (() => {
+    try {
+      const savedUser = localStorage.getItem('user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    // eslint-disable-next-line no-unused-vars
+    } catch (e) {
+      return null;
+    }
+  })(),
+  token: localStorage.getItem('token') || null,
+  loading: false,
+  isInitialized: false,
+  error: null,
+  isSignedIn: !!localStorage.getItem('token'), 
+}
+
 const authSlice = createSlice({
   name: "auth",
-  initialState: {
-    user: null,
-    token: null,
-    loading: false,
-    isInitialized: false,
-    error: null,
-  },
+  initialState: initialState,
   reducers: {
+    setCredentials: (state, action) => {
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.isSignedIn = true;
+
+      // Update localStorage
+      localStorage.setItem("token", action.payload.token);
+      localStorage.setItem("user", JSON.stringify(action.payload.user));
+    },
     signOut: (state) => {
       state.user = null;
       state.token = null;
       state.isInitialized = true;
+      state.isSignedIn = false;
+
+      // Also clear localStorage
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
     },
     updateUserProfileImage: (state, action) => {
       if (state.user) {
         state.user.profileImg = action.payload;
+        // Update localStorage with new image URL
+        localStorage.setItem("user", JSON.stringify(state.user));
       }
     },
     setInitialized: (state) => {
@@ -180,6 +213,8 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.isInitialized = true;
         state.error = null;
+        state.isSignedIn = true;
+        localStorage.getItem("token");
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -200,11 +235,13 @@ const authSlice = createSlice({
         };
         state.loading = false;
         state.isInitialized = true;
+        state.isSignedIn = true;
         state.error = null;
       })
       .addCase(loadUser.rejected, (state, action) => {
         state.loading = false;
         state.isInitialized = true;
+        state.isSignedIn = false;
         state.error = action.payload;
       })
 

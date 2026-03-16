@@ -16,7 +16,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "../store/slices/authSlice";
 import BannerCarousel from "../components/common/BannerCorousel";
 
-// pages/HomePage.jsx
 export function HomePage() {
   const { user, token, loading } = useSelector((state) => state.auth);
   const { jobs } = useSelector((state) => state.seekerJobs);
@@ -37,11 +36,17 @@ export function HomePage() {
   const isSignedIn = !!user;
 
   useEffect(() => {
-  console.log("🏠 HOMEPAGE DEBUG:");
-  console.log("  user from Redux:", user);
-  console.log("  user role:", user?.role);
-  console.log("  isSignedIn:", !!user);
-}, [user]);
+
+    // Check if token is expired
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        JSON.parse(atob(token.split(".")[1]));
+      } catch (e) {
+        console.log("Could not decode token", e);
+      }
+    }
+  }, [user, isSignedIn]);
 
   if (loading && token) {
     return (
@@ -88,8 +93,8 @@ export function HomePage() {
         onMobileMenuClick={() => setMobileDrawerOpen(true)}
         savedJobsCount={savedJobs.length}
         isAdminRoute={false}
-        adminActiveTab={adminActiveTab} // 👈 ADD THIS
-        onAdminTabChange={handleAdminTabChange} // 👈 ADD THIS
+        adminActiveTab={adminActiveTab} 
+        onAdminTabChange={handleAdminTabChange} 
       />
 
       <BannerCarousel />
