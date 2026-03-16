@@ -18,6 +18,8 @@ import seekerJobRoutes from "./routes/seekerJobRoutes.js";
 
 const app = express();
 
+app.set('trust proxy', 1); 
+
 app.use(
   cors({
     origin:
@@ -29,6 +31,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+app.options('*', cors());
 
 app.use(cookieParser());
 app.use(express.json());
