@@ -114,7 +114,7 @@ export function ProfilePanel({ isOpen, onClose }) {
   const [preferredLocationsInput, setPreferredLocationsInput] = useState("");
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (isOpen && user && user._id) {
       setInitialLoading(true);
       dispatch(fetchProfile()).finally(() => {
         setInitialLoading(false);

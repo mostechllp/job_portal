@@ -59,6 +59,19 @@ export const verifyOTP = createAsyncThunk(
   async ({ email, otp }, { rejectWithValue }) => {
     try {
       const response = await API.post("/auth/verify-otp", { email, otp });
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+
+      if (response.data.user) {
+        // Make sure profileImg is included
+        const userToSave = {
+          ...response.data.user,
+          _id: response.data.user.id || response.data.user._id,
+          profileImg: response.data.user.profileImg || null,
+        };
+        localStorage.setItem("user", JSON.stringify(userToSave));
+      }
       return response.data;
     } catch (err) {
       return rejectWithValue(
@@ -140,19 +153,19 @@ export const adminLogin = createAsyncThunk(
 const initialState = {
   user: (() => {
     try {
-      const savedUser = localStorage.getItem('user');
+      const savedUser = localStorage.getItem("user");
       return savedUser ? JSON.parse(savedUser) : null;
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (e) {
       return null;
     }
   })(),
-  token: localStorage.getItem('token') || null,
+  token: localStorage.getItem("token") || null,
   loading: false,
   isInitialized: false,
   error: null,
-  isSignedIn: !!localStorage.getItem('token'), 
-}
+  isSignedIn: !!localStorage.getItem("token"),
+};
 
 const authSlice = createSlice({
   name: "auth",
@@ -272,9 +285,13 @@ const authSlice = createSlice({
           state.token = action.payload.token;
         }
         if (action.payload.user) {
-          state.user = action.payload.user;
+          state.user = {
+            ...action.payload.user,
+            _id: action.payload.user.id || action.payload.user._id,
+          };
         }
         state.isInitialized = true;
+        state.isSignedIn = true;
         state.error = null;
       })
       .addCase(verifyOTP.rejected, (state, action) => {
