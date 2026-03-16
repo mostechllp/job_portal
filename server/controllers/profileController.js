@@ -216,7 +216,7 @@ export class ProfileController {
       res.status(200).json({
         message: "Profile image uploaded successfully",
         profile,
-        user: updatedUser, 
+        user: updatedUser,
       });
     } catch (error) {
       next(error);
@@ -232,7 +232,7 @@ export class ProfileController {
       res.status(200).json({
         message: "Profile image deleted successfully",
         profile,
-        user: updatedUser, 
+        user: updatedUser,
       });
     } catch (error) {
       next(error);

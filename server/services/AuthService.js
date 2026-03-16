@@ -143,6 +143,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        profileImg: user.profileImg
       },
     };
   }
@@ -288,8 +289,16 @@ export class AuthService {
         isAdmin: true,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" },
+      { expiresIn: "30d" },
     );
+
+    // Set cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
 
     return {
       token,
@@ -299,6 +308,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
       },
+      token,
       isAdmin: true,
     };
   }
