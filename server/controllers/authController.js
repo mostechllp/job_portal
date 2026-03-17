@@ -14,7 +14,6 @@ export class AuthController {
     try {
       const { email, password } = req.body;
 
-
       // Validate input
       if (!email || !password) {
         return res.status(400).json({
@@ -32,27 +31,27 @@ export class AuthController {
   }
 
   async getMe(req, res, next) {
-  try {
-    if (!req.user) {
-      return res.status(404).json({ message: "User not found" });
+    try {
+      if (!req.user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return a clean user object with consistent structure
+      res.status(200).json({
+        user: {
+          _id: req.user._id || req.user.id,
+          name: req.user.name,
+          email: req.user.email,
+          role: req.user.role,
+          profileImg: req.user.profileImg,
+          isVerified: req.user.isVerified,
+        },
+      });
+    } catch (err) {
+      console.error("Error in getMe:", err);
+      next(err);
     }
-    
-    // Return a clean user object with consistent structure
-    res.status(200).json({ 
-      user: {
-        _id: req.user._id || req.user.id,
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role,
-        profileImg: req.user.profileImg,
-        isVerified: req.user.isVerified
-      } 
-    });
-  } catch (err) {
-    console.error("Error in getMe:", err);
-    next(err);
   }
-}
 
   async verifyOTP(req, res, next) {
     try {
@@ -114,6 +113,14 @@ export class AuthController {
       }
 
       const result = await authService.adminLogin(email, password);
+
+      res.cookie("token", result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
+
       res.status(200).json(result);
     } catch (error) {
       const statusCode = error.statusCode || 401;

@@ -148,6 +148,7 @@ export class AuthService {
       },
     };
   }
+  
   async forgotPassword(email) {
     try {
       const user = await userRepository.findByEmail(email);
@@ -293,14 +294,7 @@ export class AuthService {
       { expiresIn: "30d" },
     );
 
-    // Set cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000
-    });
-
+    // Return token and user data - cookie should be set in controller
     return {
       token,
       user: {
